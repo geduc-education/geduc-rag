@@ -39,4 +39,48 @@ describe('validateEnv', () => {
       validateEnv({ ...BASE, CHUNK_SIZE: '100', CHUNK_OVERLAP: '100' }),
     ).toThrow(/CHUNK_OVERLAP/);
   });
+
+  it('aplica os defaults dos providers de embedding, LLM e storage', () => {
+    const config = validateEnv({ ...BASE });
+    expect(config.EMBEDDING_PROVIDER).toBe('mock');
+    expect(config.EMBEDDING_MODEL).toBe('Xenova/multilingual-e5-small');
+    expect(config.EMBEDDING_DIMENSIONS).toBe(384);
+    expect(config.EMBEDDING_QUERY_PREFIX).toBe('query: ');
+    expect(config.EMBEDDING_PASSAGE_PREFIX).toBe('passage: ');
+    expect(config.EMBEDDING_CACHE_DIR).toBeUndefined();
+    expect(config.LLM_PROVIDER).toBe('mock');
+    expect(config.LLM_BASE_URL).toBe('http://localhost:11434');
+    expect(config.LLM_MODEL).toBe('qwen2.5:7b');
+    expect(config.LLM_TIMEOUT_MS).toBe(120000);
+    expect(config.RAG_STORAGE).toBe('mysql');
+    expect(config.DOCUMENT_MAX_UPLOAD_BYTES).toBe(10485760);
+  });
+
+  it('aceita LLM_PROVIDER=ollama, EMBEDDING_PROVIDER=local e RAG_STORAGE=memory', () => {
+    const config = validateEnv({
+      ...BASE,
+      LLM_PROVIDER: 'ollama',
+      EMBEDDING_PROVIDER: 'local',
+      RAG_STORAGE: 'memory',
+      LLM_TIMEOUT_MS: '30000',
+      DOCUMENT_MAX_UPLOAD_BYTES: '2048',
+    });
+    expect(config.LLM_PROVIDER).toBe('ollama');
+    expect(config.EMBEDDING_PROVIDER).toBe('local');
+    expect(config.RAG_STORAGE).toBe('memory');
+    expect(config.LLM_TIMEOUT_MS).toBe(30000);
+    expect(config.DOCUMENT_MAX_UPLOAD_BYTES).toBe(2048);
+  });
+
+  it('rejeita LLM_PROVIDER=openai', () => {
+    expect(() => validateEnv({ ...BASE, LLM_PROVIDER: 'openai' })).toThrow(
+      /LLM_PROVIDER/,
+    );
+  });
+
+  it('rejeita LLM_BASE_URL que não é URL', () => {
+    expect(() => validateEnv({ ...BASE, LLM_BASE_URL: 'nao-e-url' })).toThrow(
+      /LLM_BASE_URL/,
+    );
+  });
 });

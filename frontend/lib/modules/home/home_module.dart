@@ -4,6 +4,7 @@ import '../../core/auth/permission_service.dart';
 import '../../core/storage/local_preferences.dart';
 import '../auth/guards/auth_guard.dart';
 import '../auth/guards/must_change_password_guard.dart';
+import '../rag_assistant/rag_assistant_module.dart';
 import '../users/users_module.dart';
 import 'presentation/dashboard_page.dart';
 import 'presentation/home_shell_controller.dart';
@@ -28,6 +29,7 @@ final homeModule = createModule(
       ),
     );
     registerUsersBinds(c);
+    registerRagAssistantBinds(c);
     c.route(
       '/',
       guards: [authGuard, mustChangePasswordGuard],
@@ -35,6 +37,7 @@ final homeModule = createModule(
       children: (r) {
         r.route('/dashboard', child: (_, _) => const DashboardPage());
         registerUsersRoutes(r);
+        registerRagAssistantRoutes(r);
       },
     );
   },

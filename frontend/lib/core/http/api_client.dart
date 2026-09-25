@@ -138,6 +138,16 @@ class ApiClient {
   Future<Response<T>> delete<T>(String path, {Object? data}) =>
       _guard(() => _dio.delete<T>(path, data: data));
 
+  /// Envia [data] como `multipart/form-data` (upload de arquivo). Passa pelos
+  /// mesmos interceptors (Authorization e `tenant-id`) e pelo [_guard].
+  Future<Response<T>> upload<T>(String path, FormData data) => _guard(
+    () => _dio.post<T>(
+      path,
+      data: data,
+      options: Options(contentType: 'multipart/form-data'),
+    ),
+  );
+
   /// Executa [request] e converte qualquer [DioException] em [AppException].
   Future<Response<T>> _guard<T>(Future<Response<T>> Function() request) async {
     try {

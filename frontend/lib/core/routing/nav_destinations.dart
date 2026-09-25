@@ -7,6 +7,9 @@ import '../auth/app_permissions.dart';
 enum NavGroup {
   /// Gestão da plataforma (Usuários, e em seguida Tenants/Perfis).
   administracao,
+
+  /// Assistente RAG (Documentos e Chat), escopado pelo tenant ativo.
+  assistente,
 }
 
 /// Item declarativo do menu lateral do shell, **permission-aware**.
@@ -36,8 +39,7 @@ final class NavDestination {
   final NavGroup? group;
 }
 
-/// Catálogo de destinos do menu. Os módulos do RAG (Documentos, Assistente)
-/// entram aqui quando suas telas existirem.
+/// Catálogo de destinos do menu.
 const List<NavDestination> navDestinations = <NavDestination>[
   NavDestination(
     label: 'Início',
@@ -53,25 +55,47 @@ const List<NavDestination> navDestinations = <NavDestination>[
     description: 'Equipe e acessos',
     group: NavGroup.administracao,
   ),
+  NavDestination(
+    label: 'Documentos',
+    icon: Icons.description_outlined,
+    route: '/home/rag/documents',
+    requiredPermissions: <String>[AppPermissions.documentRead],
+    description: 'Base de conhecimento',
+    group: NavGroup.assistente,
+  ),
+  NavDestination(
+    label: 'Assistente',
+    icon: Icons.forum_outlined,
+    route: '/home/rag/chat',
+    requiredPermissions: <String>[AppPermissions.chatQuery],
+    description: 'Perguntas com citações',
+    group: NavGroup.assistente,
+  ),
 ];
 
 /// Rótulo de exibição da seção [group] na sidebar.
 String navGroupLabel(NavGroup group) => switch (group) {
   NavGroup.administracao => 'Administração',
+  NavGroup.assistente => 'Assistente',
 };
 
 /// Ícone do header do grupo [group] na sidebar.
 IconData navGroupIcon(NavGroup group) => switch (group) {
   NavGroup.administracao => Icons.admin_panel_settings_outlined,
+  NavGroup.assistente => Icons.auto_awesome_outlined,
 };
 
 /// Descrição curta do grupo — tooltip do header na sidebar.
 String navGroupDescription(NavGroup group) => switch (group) {
   NavGroup.administracao => 'Gestão da plataforma',
+  NavGroup.assistente => 'Documentos e chat do RAG',
 };
 
 /// Ordem fixa das seções na sidebar.
-const List<NavGroup> navGroupOrder = <NavGroup>[NavGroup.administracao];
+const List<NavGroup> navGroupOrder = <NavGroup>[
+  NavGroup.administracao,
+  NavGroup.assistente,
+];
 
 /// Seção agrupada com seus itens já podados por visibilidade.
 typedef SidebarSection = ({NavGroup group, List<NavDestination> items});

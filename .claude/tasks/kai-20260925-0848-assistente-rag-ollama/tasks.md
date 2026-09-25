@@ -8,13 +8,13 @@
 | T-04 | backend | Domínio de documentos (mimeType, tamanho, falha, list/delete) e contrato HTTP de documentos | — | sim | média | Athena | [x] |
 | T-05 | backend | Domínio do chat com conversa por usuário e contrato HTTP do chat | — | sim | média | Jaspion | [x] |
 | T-06 | frontend | Base do módulo rag_assistant: deps, ApiClient.upload, menu, rotas protegidas e stubs | — | sim | média | Aang | [x] |
-| T-07 | backend | Vector store Prisma com BLOB Float32 e cosseno filtrado por tenant | T-01, T-02, T-03 | sim | alta | Platão | [ ] |
-| T-08 | backend | Repositório Prisma de documentos e motivo de falha na ingestão | T-01, T-02, T-03, T-04 | sim | média | Darwin | [ ] |
-| T-09 | backend | Extração de texto de .md/.txt/.pdf/.docx | T-02 | sim | média | Athena | [ ] |
-| T-10 | backend | Repositório Prisma de conversas e filename nas citações do chat | T-01, T-02, T-03, T-05 | sim | média | Jaspion | [ ] |
-| T-11 | backend | Gateway de embeddings locais com transformers.js | T-02, T-03 | sim | alta | Tesla | [ ] |
-| T-12 | backend | Gateway Ollama com timeout e erros como LlmProviderError | T-02 | sim | média | Levi | [ ] |
-| T-13 | frontend | Camada de dados do rag_assistant (modelos, repositórios, fakes) | T-04, T-05, T-06 | sim | média | Aang | [ ] |
+| T-07 | backend | Vector store Prisma com BLOB Float32 e cosseno filtrado por tenant | T-01, T-02, T-03 | sim | alta | Platão | [x] |
+| T-08 | backend | Repositório Prisma de documentos e motivo de falha na ingestão | T-01, T-02, T-03, T-04 | sim | média | Darwin | [x] |
+| T-09 | backend | Extração de texto de .md/.txt/.pdf/.docx | T-02 | sim | média | Athena | [x] |
+| T-10 | backend | Repositório Prisma de conversas e filename nas citações do chat | T-01, T-02, T-03, T-05 | sim | média | Jaspion | [x] |
+| T-11 | backend | Gateway de embeddings locais com transformers.js | T-02, T-03 | sim | alta | Tesla | [x] |
+| T-12 | backend | Gateway Ollama com timeout e erros como LlmProviderError | T-02 | sim | média | Levi | [x] |
+| T-13 | frontend | Camada de dados do rag_assistant (modelos, repositórios, fakes) | T-04, T-05, T-06 | sim | média | Aang | [x] |
 | T-14 | backend | API de documentos: upload multipart, listagem paginada, exclusão e e2e | T-02, T-03, T-04, T-07, T-08, T-09, T-10 | sim | alta | Darwin | [ ] |
 | T-15 | frontend | Tela Documentos (upload, lista com status, polling, excluir) | T-06, T-13 | sim | média | Aang | [ ] |
 | T-16 | frontend | Tela Chat (bolhas, citações, nova conversa, loading) | T-06, T-13 | sim | média | Goku | [ ] |

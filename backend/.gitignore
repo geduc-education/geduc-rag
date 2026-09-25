@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+
+# Keep environment variables out of version control
+.env
+.env.*
+!.env.example
+
+# Prisma generated client (per-checkout)
+/generated/prisma
+
+# OpenAPI dump artifact
+openapi.json
+
+# Logs
+*.log

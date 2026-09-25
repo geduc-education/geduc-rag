@@ -1,0 +1,22 @@
+# Deps e artefatos reconstruídos dentro da imagem
+node_modules
+dist
+coverage
+
+# Client do Prisma gerado por checkout (regenerado no build)
+generated/prisma
+
+# Segredos — nunca vão para a imagem (config é injetada em runtime)
+.env
+.env.*
+!.env.example
+
+# Metadados/dev que não afetam o build da imagem
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.log
+openapi.json
+test
+**/*.spec.ts

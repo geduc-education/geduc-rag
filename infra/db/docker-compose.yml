@@ -1,0 +1,27 @@
+name: geduc-rag-db
+
+# MySQL de DESENVOLVIMENTO do geduc-rag. Vetores do RAG NÃO ficam aqui (o
+# MySQL não tem busca vetorial indexada): quando os adapters in-memory forem
+# trocados, o vector store vai para um serviço externo (Qdrant/Pinecone...).
+# Porta 3307 no host para não colidir com um MySQL local na 3306.
+#
+#   docker compose -f infra/db/docker-compose.yml up -d
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: geduc_rag
+      MYSQL_USER: rag
+      MYSQL_PASSWORD: rag
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysqldata:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    restart: unless-stopped
+
+volumes:
+  mysqldata:

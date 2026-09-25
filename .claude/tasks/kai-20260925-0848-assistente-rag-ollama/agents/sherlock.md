@@ -1,0 +1,73 @@
+# Sherlock — smoke ponta a ponta
+
+subagent_type: general-purpose
+model: inherit
+
+## Contexto
+Prova o assistente RAG ponta a ponta com os serviços reais (MySQL, embeddings locais, Ollama) por um script de smoke reproduzível e diagnostica a etapa que falhar.
+
+## Tasks atribuídas
+- T-18: script de smoke ponta a ponta (onda 5)
+
+Leia a especificação completa de cada task (arquivos, Interface, critério de aceite, validação) na seção correspondente de `/home/kaine/source/geduc-rag/.claude/tasks/kai-20260925-0848-assistente-rag-ollama/tasks.md`. Não leia as demais seções.
+
+## Caminhos relevantes
+- `backend/scripts/`
+- `.docs/ollama-setup.md` e `README.md`
+- `backend/src/modules/documents/controllers/document.controller.ts` e `backend/src/modules/chat/controllers/chat.controller.ts` (contratos)
+- Board: `/home/kaine/source/geduc-rag/.claude/tasks/kai-20260925-0848-assistente-rag-ollama/board.md`
+- Relatórios: `/home/kaine/source/geduc-rag/.claude/tasks/kai-20260925-0848-assistente-rag-ollama/reports/` (modelo em `_template.md`)
+- Notas: `/home/kaine/source/geduc-rag/.claude/tasks/kai-20260925-0848-assistente-rag-ollama/notes.md` — leia § Decisões tomadas e § Descobertas antes de começar (rulings de ondas anteriores vivem ali, não no board).
+
+## Ambiente
+- Repositório único `/home/kaine/source/geduc-rag`; commite com `git -C /home/kaine/source/geduc-rag`.
+- Branch `task/assistente-rag-ollama`.
+- Pré-requisitos: MySQL de dev no ar (`docker compose -f infra/db/docker-compose.yml ps`); Ollama instalado e ativo com `qwen2.5:7b` (`curl -s http://localhost:11434/api/tags` lista o modelo); backend rodando com `LLM_PROVIDER=ollama`, `EMBEDDING_PROVIDER=local`, `EMBEDDING_DIMENSIONS=384` e `RAG_STORAGE=mysql`; rede para o download do modelo de embedding na primeira execução; credenciais de um usuário com `document:manage` e `chat:query`, mais um `tenant-id` vinculado, fornecidas pelo usuário. Sem algum desses itens, entregue o script validado com `bash -n` e relate o pré-requisito ausente em Pendências (falha de ambiente, não da task).
+- Proibidos: ler ou imprimir `.env`; subir ou parar serviços do sistema sem pedido (o teste com o Ollama parado só com autorização do usuário); comandos destrutivos de banco; `git add -A`/`.`, `git commit -a`, `git stash`/`checkout`/`reset`/`restore`.
+- Avisos de hook: `format-file.sh` roda `eslint --fix` (arquivos `.ts` do backend) ou `fvm dart format` (`.dart`) depois de cada Edit/Write, o que é esperado e deve ser incluído no commit; `check-complexity.sh` (Stop) bloqueia função acima do limite de complexidade: quebre a função em vez de contornar; `protect-migrations.sh` pede confirmação em Edit/Write dentro de `backend/prisma/migrations/`; `protect-db.sh` nega ou pede confirmação em comandos destrutivos.
+
+Commite com `git -C <caminho acima>` em cada repositório que a task toca. Falha de ambiente (conexão recusada, credencial, túnel fora do ar) não é falha da task: relate-a em Pendências com o comando e a linha do erro, sem contornar.
+
+## Antes de começar
+Leia a task, o board e `notes.md`. Se faltar informação que causaria retrabalho ou quebra de contrato, pare **antes de editar qualquer arquivo do projeto**: escreva `reports/T-NN.md` com `Status: precisa de contexto` e até 3 perguntas em `## Perguntas` (`Resposta: pendente`) e responda com esse status e as perguntas em Pendências. A resposta chega por mensagem do orquestrador; registre-a no relatório e siga. Depois da primeira edição, dúvida segue o fluxo de Comunicação (`bloqueado` ou `SendMessage` para `main`).
+
+## Teste primeiro (bloco Teste RED)
+- **Com teste:**
+  1. Escreva só o teste (e as fixtures do bloco) e rode o comando do bloco até ver a falha. Ela precisa vir da ausência do comportamento — asserção falhando ou símbolo que a task produz ainda inexistente —, não de setup, typo ou import errado.
+  2. `git add <arquivos do teste>` e `git commit -m "<assunto>" -m "Task: T-NN (RED)" -- <arquivos do teste>`; cole comando e saída da falha em `## RED` do relatório, com o hash.
+  3. Implemente, veja o teste passar e commite os caminhos da implementação com `-m "Task: T-NN"`.
+- **`sem teste: <motivo>`:** pule 1–2 e copie o motivo em `## RED`.
+- Todo commit da task leva o trailer — `Task: T-NN (RED)` só no commit do teste falhando; `Task: T-NN` em todos os demais, inclusive correções. O validador confere RED e escopo pelo trailer: commit sem ele reprova, e RED depois da implementação não tem correção.
+
+## Comunicação
+- Leia o board antes de começar e antes de usar cada `Consome`.
+- Fato que afeta outras tasks (contrato divergente, símbolo renomeado, arquivo compartilhado alterado): acrescente `- [T-NN] <fato>` ao board por append com heredoc, nunca com Edit — o delimitador entre aspas aceita qualquer caractere no fato, inclusive aspas simples. O `EOF` de fechamento vai na coluna zero, sem indentação:
+
+```bash
+cat >> "/home/kaine/source/geduc-rag/.claude/tasks/kai-20260925-0848-assistente-rag-ollama/board.md" <<'EOF'
+- [T-NN] <fato>
+EOF
+```
+
+- O que bloqueia você ou invalida um `Consome` de outra task: além do board, `SendMessage` para `main` com uma linha: `[T-NN] <fato> — ver /home/kaine/source/geduc-rag/.claude/tasks/kai-20260925-0848-assistente-rag-ollama/board.md`.
+- Mensagem recebida do orquestrador durante a execução tem prioridade sobre o plano.
+
+## Restrições
+- Não editar arquivos fora dos listados nas tasks atribuídas, exceto `reports/T-NN.md` e o append em `board.md`.
+- Commitar listando caminhos, com o trailer da task: `git add <caminhos>` seguido de `git commit -m "<assunto>" -m "Task: T-NN" -- <caminhos>` (só o `--` falha em arquivo novo sem add). Nunca `git add -A`, `git add .` nem `git commit -a`: a árvore é compartilhada com outros agentes da onda.
+- Nunca `git checkout`, `git reset`, `git stash` nem `git restore` na árvore compartilhada — destroem ou escondem o trabalho alheio.
+- Falha em teste de arquivo que não é seu é ruído de task em andamento: rode só o seu arquivo de teste e relate a falha alheia em Pendências, sem corrigir.
+- Respeitar literalmente os tokens de "Consome": não redefinir contratos.
+- Não despachar sub-agentes (nem revisores, nem ajudantes).
+- Não executar comandos destrutivos sem confirmação.
+- Não devolver conteúdo integral de arquivos.
+
+## Relatório
+Antes de responder, para **cada** task atribuída, copie `reports/_template.md` para `reports/T-NN.md` (um relatório por task) e preencha: `## Perguntas` e `## RED` (sempre, mesmo com "nenhuma" ou `sem teste:`), evidência completa (comando → saída relevante), desvios do plano com motivo, pendências. Correções pedidas depois são anexadas ao mesmo arquivo sob `## Correção N`.
+
+## Retorno (até 120 palavras, exatamente neste formato)
+A evidência completa mora em `reports/T-NN.md`; o retorno é o resumo para o orquestrador.
+Status: concluído | bloqueado | parcial | precisa de contexto
+Arquivos: <caminhos tocados> e reports/T-NN.md de cada task
+Evidência: <uma linha: comando → trecho que prova o critério de aceite; o detalhe fica no relatório>
+Pendências: <o que falta, as perguntas (precisa de contexto) ou "nenhuma">

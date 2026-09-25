@@ -1,0 +1,46 @@
+# ── Segredos (nunca versionar) ─────────────────────────────────────────────
+.env
+.env.*
+.env_*
+!.env.example
+secrets/
+
+# ── Node / Backend ─────────────────────────────────────────────────────────
+node_modules/
+dist/
+coverage/
+backend/generated/
+backend/openapi.json
+.env*.local
+
+# ── Flutter / Frontend ─────────────────────────────────────────────────────
+**/.dart_tool/
+**/build/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+frontend/.metadata
+
+# FVM: não versionar o SDK baixado; manter apenas o pin (.fvmrc)
+.fvm/flutter_sdk
+.fvm/versions
+
+# ── IDE / OS ───────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+.DS_Store
+*.log
+
+# ── Planejamento (rascunhos) ───────────────────────────────────────────────
+.tasks/
+
+# ── Repos auxiliares clonados para consulta (nunca versionar) ──────────────
+.tmp/*
+!.tmp/.gitkeep
+.claude/prompts/prompt.md
+.claude/worktrees/
+
+# Artefatos de QA do Playwright MCP
+.playwright-mcp/

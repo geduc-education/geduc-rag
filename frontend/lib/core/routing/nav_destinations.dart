@@ -1,0 +1,111 @@
+import 'package:flutter/material.dart';
+
+import '../auth/app_permissions.dart';
+
+/// Seção de agrupamento do menu lateral. Puramente de apresentação — a
+/// visibilidade de cada item é decidida pelas permissões.
+enum NavGroup {
+  /// Gestão da plataforma (Usuários, e em seguida Tenants/Perfis).
+  administracao,
+}
+
+/// Item declarativo do menu lateral do shell, **permission-aware**.
+///
+/// `route` é o path absoluto sob `/home/...`. `requiredPermissions` vazio =
+/// visível para qualquer autenticado; senão o item aparece com **pelo menos
+/// uma** das chaves (união). As chaves vêm de [AppPermissions].
+final class NavDestination {
+  const NavDestination({
+    required this.label,
+    required this.icon,
+    required this.route,
+    this.requiredPermissions = const <String>[],
+    this.description,
+    this.group,
+  });
+
+  final String label;
+  final IconData icon;
+  final String route;
+  final List<String> requiredPermissions;
+
+  /// Subtítulo curto exibido sob o [label] (≤ 28 chars).
+  final String? description;
+
+  /// Seção de agrupamento na sidebar. `null` = item solto.
+  final NavGroup? group;
+}
+
+/// Catálogo de destinos do menu. Os módulos do RAG (Documentos, Assistente)
+/// entram aqui quando suas telas existirem.
+const List<NavDestination> navDestinations = <NavDestination>[
+  NavDestination(
+    label: 'Início',
+    icon: Icons.home_outlined,
+    route: '/home/dashboard',
+    description: 'Visão geral',
+  ),
+  NavDestination(
+    label: 'Usuários',
+    icon: Icons.manage_accounts_outlined,
+    route: '/home/users',
+    requiredPermissions: <String>[AppPermissions.userRead],
+    description: 'Equipe e acessos',
+    group: NavGroup.administracao,
+  ),
+];
+
+/// Rótulo de exibição da seção [group] na sidebar.
+String navGroupLabel(NavGroup group) => switch (group) {
+  NavGroup.administracao => 'Administração',
+};
+
+/// Ícone do header do grupo [group] na sidebar.
+IconData navGroupIcon(NavGroup group) => switch (group) {
+  NavGroup.administracao => Icons.admin_panel_settings_outlined,
+};
+
+/// Descrição curta do grupo — tooltip do header na sidebar.
+String navGroupDescription(NavGroup group) => switch (group) {
+  NavGroup.administracao => 'Gestão da plataforma',
+};
+
+/// Ordem fixa das seções na sidebar.
+const List<NavGroup> navGroupOrder = <NavGroup>[NavGroup.administracao];
+
+/// Seção agrupada com seus itens já podados por visibilidade.
+typedef SidebarSection = ({NavGroup group, List<NavDestination> items});
+
+/// Layout do menu particionado em soltos (topo/rodapé) e seções.
+typedef SidebarLayout = ({
+  List<NavDestination> topLoose,
+  List<SidebarSection> sections,
+  List<NavDestination> bottomLoose,
+});
+
+/// Particiona [visible] no layout da sidebar: item solto vai pro rodapé quando
+/// aparece **depois** de todo item agrupado em [navDestinations], senão vai
+/// pro topo. Seções sem item visível são omitidas.
+SidebarLayout buildSidebarLayout(List<NavDestination> visible) {
+  final lastGroupedIndex = navDestinations.lastIndexWhere(
+    (d) => d.group != null,
+  );
+  final topLoose = <NavDestination>[];
+  final bottomLoose = <NavDestination>[];
+  final grouped = <NavGroup, List<NavDestination>>{};
+  for (final destination in visible) {
+    final group = destination.group;
+    if (group == null) {
+      final isBottom = navDestinations.indexOf(destination) > lastGroupedIndex;
+      (isBottom ? bottomLoose : topLoose).add(destination);
+    } else {
+      grouped.putIfAbsent(group, () => <NavDestination>[]).add(destination);
+    }
+  }
+  final sections = <SidebarSection>[
+    for (final group in navGroupOrder)
+      if (grouped[group]?.isNotEmpty ?? false)
+        (group: group, items: grouped[group]!),
+  ];
+  return (topLoose: topLoose, sections: sections, bottomLoose: bottomLoose);
+}

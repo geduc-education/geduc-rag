@@ -1,0 +1,167 @@
+// ==========================================================================
+// geduc-rag — schema Prisma (CONTRATO de dados)
+// Plataforma de RAG multi-tenant: identidade própria, RBAC N:N (perfil ↔
+// permissão) e vínculo N:N usuário ↔ tenant.
+// Convenções da casa (mesmas do geduc-suporte): tabelas snake_case via @@map,
+// colunas via @map onde diverge do camelCase, FKs de cadastros NUNCA Cascade
+// (Restrict/SetNull) — só tabelas de junção/filhas puras usam Cascade.
+//
+// Documentos, conversas e vetores do RAG ainda vivem nos adapters in-memory
+// herdados do rag-api (ver .docs/rag-architecture.md); entram aqui quando o
+// storage do pipeline for adotado (vetores em vector store externo, pois o
+// MySQL não tem busca vetorial indexada).
+// ==========================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ==========================================================================
+// Identidade / RBAC
+// ==========================================================================
+
+/// Usuário da plataforma (base própria — não depende do geduc-api).
+model User {
+  id                 String    @id @default(uuid())
+  name               String
+  email              String    @unique @db.VarChar(255)
+  passwordHash       String    @map("password_hash")
+  active             Boolean   @default(true)
+  mustChangePassword Boolean   @default(true) @map("must_change_password")
+  /// Protege o usuário de bootstrap (SUPERADMIN) de rebaixamento/remoção e
+  /// concede bypass de permissões e de vínculo com tenant.
+  isSuperAdmin       Boolean   @default(false) @map("is_super_admin")
+  lastLoginAt        DateTime? @map("last_login_at")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+
+  profiles         UserProfile[] @relation("UserProfiles")
+  assignedProfiles UserProfile[] @relation("UserProfileAssignedBy")
+  tenants          UserTenant[]
+
+  @@index([active])
+  @@map("user")
+}
+
+/// Perfil (papel) — agrupa permissões. Global da plataforma: a permissão
+/// efetiva do usuário é a união dos perfis ativos, e o escopo de dado é dado
+/// pelo vínculo `UserTenant`.
+model Profile {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String? @db.Text
+  /// Protege perfis de seed (não podem ser removidos pela UI).
+  system      Boolean @default(false)
+  active      Boolean @default(true)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+
+  users       UserProfile[]
+  permissions ProfilePermission[]
+
+  @@index([active])
+  @@map("profile")
+}
+
+/// Join N:N usuário ↔ perfil.
+model UserProfile {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  profileId    String   @map("profile_id")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+  assignedById String?  @map("assigned_by_id")
+
+  user       User    @relation("UserProfiles", fields: [userId], references: [id], onDelete: Cascade)
+  profile    Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  assignedBy User?   @relation("UserProfileAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, profileId])
+  @@index([profileId])
+  @@map("user_profile")
+}
+
+/// Permissão granular no formato `recurso:acao` (ex.: `document:manage`).
+/// Catálogo fonte em `src/common/rbac/permissions.ts` (semeado pelo seed).
+model Permission {
+  id          String  @id @default(uuid())
+  key         String  @unique
+  description String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  profiles ProfilePermission[]
+
+  @@map("permission")
+}
+
+/// Join N:N perfil ↔ permissão.
+model ProfilePermission {
+  id           String @id @default(uuid())
+  profileId    String @map("profile_id")
+  permissionId String @map("permission_id")
+
+  profile    Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, permissionId])
+  @@index([permissionId])
+  @@map("profile_permission")
+}
+
+// ==========================================================================
+// Multi-tenant
+// ==========================================================================
+
+/// Tenant (workspace/cliente). Todo dado do RAG (documento, chunk, vetor,
+/// conversa) é escopado por `tenantId` — inclusive a busca vetorial.
+model Tenant {
+  id     String  @id @default(uuid())
+  name   String
+  /// Identificador legível e estável (URL/integração). Único na plataforma,
+  /// inclusive entre excluídos (o unique não distingue `deletedAt`).
+  slug   String  @unique
+  active Boolean @default(true)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deletedById String?   @map("deleted_by_id")
+
+  users UserTenant[]
+
+  @@index([active])
+  @@map("tenant")
+}
+
+/// Join N:N usuário ↔ tenant. É o que libera o header `tenant-id` nas rotas
+/// escopadas (`TenantGuard`). Tenant com vínculo não some em cascata.
+model UserTenant {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tenantId  String   @map("tenant_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+  @@map("user_tenant")
+}

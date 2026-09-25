@@ -1,0 +1,40 @@
+name: geduc_rag
+description: "Plataforma de RAG (geduc-rag) — painel web."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+# Mesma base do geduc-suporte (flutter_modular + Dio + secure_storage + intl).
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # URL strategy (path-based, sem `#`) na web
+  flutter_web_plugins:
+    sdk: flutter
+
+  # DI + rotas
+  flutter_modular: ^7.1.0
+  # HTTP
+  dio: ^5.10.0
+  # JWT em armazenamento seguro
+  flutter_secure_storage: ^10.3.1
+  # Preferências locais NÃO sensíveis (sidebar, e-mail lembrado, tenant ativo)
+  shared_preferences: ^2.5.5
+  # Formatação/i18n
+  intl: ^0.20.2
+  # Tipografia do design system (mesma escolha do GEDUC)
+  google_fonts: ^8.1.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

@@ -3,6 +3,7 @@ import { IConversationRepository } from '../application/interface/repository/con
 import { IRetrievalContextGateway } from '../application/interface/gateways/retrieval-context.gateway.interface';
 import { IAnswerGenerationGateway } from '../application/interface/gateways/answer-generation.gateway.interface';
 import { ConversationEntity } from '../domain/entities/conversation.entity';
+import NotFound from '../../../@core/shared/exceptions/400/not-found-error';
 
 function makeRepository(): jest.Mocked<IConversationRepository> {
   return { findById: jest.fn().mockResolvedValue(null), save: jest.fn() };
@@ -46,6 +47,7 @@ describe('SendMessageUseCase', () => {
     it('recupera contexto, gera a resposta e persiste o turno com citações', async () => {
       const result = await sut.execute({
         tenantId: 'tenant-1',
+        userId: 'user-1',
         question: 'Qual o prazo?',
       });
 
@@ -60,11 +62,22 @@ describe('SendMessageUseCase', () => {
       expect(result.citations).toHaveLength(1);
       expect(repository.save).toHaveBeenCalledTimes(1);
     });
+
+    it('cria a conversa nova com o userId do input', async () => {
+      await sut.execute({
+        tenantId: 'tenant-1',
+        userId: 'user-1',
+        question: 'Qual o prazo?',
+      });
+
+      const [saved] = repository.save.mock.calls[0];
+      expect(saved.userId).toBe('user-1');
+      expect(saved.tenantId).toBe('tenant-1');
+    });
   });
 
   describe('quando já existe uma conversa com turnos anteriores', () => {
     it('inclui o histórico anterior (sem a pergunta atual) no request de geração', async () => {
-      const conversationId = 'conv-1';
       let saved: ConversationEntity | null = null;
       repository.findById.mockImplementation(() => Promise.resolve(saved));
       repository.save.mockImplementation((conversation) => {
@@ -72,23 +85,53 @@ describe('SendMessageUseCase', () => {
         return Promise.resolve();
       });
 
-      await sut.execute({
+      const first = await sut.execute({
         tenantId: 'tenant-1',
-        conversationId,
+        userId: 'user-1',
         question: 'Primeira pergunta',
       });
       await sut.execute({
         tenantId: 'tenant-1',
-        conversationId,
+        userId: 'user-1',
+        conversationId: first.conversationId,
         question: 'Segunda pergunta',
       });
 
+      expect(repository.findById).toHaveBeenCalledWith(
+        'tenant-1',
+        'user-1',
+        first.conversationId,
+      );
       const [, secondCallArgs] = answerGateway.generate.mock.calls;
       expect(secondCallArgs[0].history).toHaveLength(2);
       expect(secondCallArgs[0].history[0]).toMatchObject({
         role: 'user',
         content: 'Primeira pergunta',
       });
+    });
+  });
+
+  describe('quando o conversationId pertence a outro usuário ou não existe', () => {
+    it('rejeita com NotFound sem chamar retrieval nem geração', async () => {
+      repository.findById.mockResolvedValue(null);
+
+      await expect(
+        sut.execute({
+          tenantId: 'tenant-1',
+          userId: 'user-2',
+          conversationId: 'conv-de-outro-usuario',
+          question: 'Qual o prazo?',
+        }),
+      ).rejects.toBeInstanceOf(NotFound);
+
+      expect(repository.findById).toHaveBeenCalledWith(
+        'tenant-1',
+        'user-2',
+        'conv-de-outro-usuario',
+      );
+      expect(retrievalGateway.retrieve).toHaveBeenCalledTimes(0);
+      expect(answerGateway.generate).toHaveBeenCalledTimes(0);
+      expect(repository.save).not.toHaveBeenCalled();
     });
   });
 });

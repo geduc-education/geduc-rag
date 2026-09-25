@@ -6,6 +6,7 @@ describe('ConversationEntity', () => {
       const conversation = ConversationEntity.create({
         conversationId: 'conv-1',
         tenantId: 'tenant-1',
+        userId: 'user-1',
       });
       conversation.addMessage({ role: 'user', content: 'Oi' });
       conversation.addMessage({ role: 'assistant', content: 'Olá!' });
@@ -18,6 +19,18 @@ describe('ConversationEntity', () => {
 
       expect(history).toHaveLength(2);
       expect(history.map((m) => m.content)).toEqual(['Oi', 'Olá!']);
+    });
+  });
+
+  describe('create', () => {
+    it('guarda o userId dono da conversa', () => {
+      const conversation = ConversationEntity.create({
+        conversationId: 'conv-1',
+        tenantId: 'tenant-1',
+        userId: 'user-1',
+      });
+
+      expect(conversation.userId).toBe('user-1');
     });
   });
 });

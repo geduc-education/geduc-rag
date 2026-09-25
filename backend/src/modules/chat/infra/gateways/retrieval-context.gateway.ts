@@ -26,6 +26,7 @@ export class RetrievalContextGateway implements IRetrievalContextGateway {
       citations: citations.map((citation) => ({
         documentId: citation.documentId,
         chunkId: citation.chunkId,
+        filename: citation.filename,
         excerpt: citation.excerpt,
       })),
     };

@@ -62,7 +62,9 @@ describe('PrismaConversationRepository', () => {
 
   beforeEach(() => {
     mocks = makePrisma();
-    sut = new PrismaConversationRepository(mocks.prisma);
+    sut = new PrismaConversationRepository(
+      mocks.prisma as unknown as PrismaService,
+    );
   });
 
   describe('findById', () => {
@@ -140,16 +142,15 @@ describe('PrismaConversationRepository', () => {
       await sut.save(conversation);
 
       expect(mocks.prisma.$transaction).toHaveBeenCalledTimes(1);
-      expect(mocks.tx.conversation.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'conv-1' },
-          create: expect.objectContaining({
-            id: 'conv-1',
-            tenantId: 'tenant-1',
-            userId: 'user-1',
-          }),
-        }),
-      );
+      const [[upsertArgs]] = mocks.tx.conversation.upsert.mock.calls as [
+        [{ where: unknown; create: unknown }],
+      ];
+      expect(upsertArgs.where).toEqual({ id: 'conv-1' });
+      expect(upsertArgs.create).toMatchObject({
+        id: 'conv-1',
+        tenantId: 'tenant-1',
+        userId: 'user-1',
+      });
     });
 
     it('é append-only: o segundo save grava só as 2 mensagens novas', async () => {

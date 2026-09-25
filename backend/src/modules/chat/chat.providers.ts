@@ -1,7 +1,10 @@
 import { IConversationRepository } from './application/interface/repository/conversation.repository.interface';
 import { IRetrievalContextGateway } from './application/interface/gateways/retrieval-context.gateway.interface';
 import { IAnswerGenerationGateway } from './application/interface/gateways/answer-generation.gateway.interface';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../database/prisma.service';
 import { InMemoryConversationRepository } from './infra/database/repositories/in-memory-conversation.repository';
+import { PrismaConversationRepository } from './infra/database/repositories/prisma-conversation.repository';
 import { RetrievalContextGateway } from './infra/gateways/retrieval-context.gateway';
 import { AnswerGenerationGateway } from './infra/gateways/answer-generation.gateway';
 import { RetrieveContextUseCase } from '../retrieval/application/usecase/retrieval/retrieve-context.usecase';
@@ -10,9 +13,17 @@ import { SendMessageUseCase } from './application/usecase/chat/send-message.usec
 
 export namespace CHAT_PROVIDERS {
   export namespace REPOSITORY {
+    /** `RAG_STORAGE=memory` mantém o adapter in-memory (e2e e dev sem banco). */
     export const CONVERSATION_REPOSITORY = {
       provide: 'IConversationRepository',
-      useClass: InMemoryConversationRepository,
+      useFactory: (
+        config: ConfigService,
+        prisma: PrismaService,
+      ): IConversationRepository =>
+        config.get<string>('RAG_STORAGE') === 'memory'
+          ? new InMemoryConversationRepository()
+          : new PrismaConversationRepository(prisma),
+      inject: [ConfigService, PrismaService],
     };
   }
 

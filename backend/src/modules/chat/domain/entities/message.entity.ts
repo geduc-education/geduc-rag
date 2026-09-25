@@ -9,6 +9,7 @@ export type MessageRole = 'user' | 'assistant';
 export interface MessageCitation {
   documentId: string;
   chunkId: string;
+  filename: string;
   excerpt: string;
 }
 

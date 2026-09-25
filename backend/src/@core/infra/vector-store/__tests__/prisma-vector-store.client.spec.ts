@@ -15,6 +15,10 @@ interface ChunkRow {
   document: { filename: string };
 }
 
+function firstArg<T>(mock: jest.Mock): T {
+  return (mock.mock.calls as T[][])[0][0];
+}
+
 function vectorOf(dims: number, seed: number): number[] {
   return Array.from({ length: dims }, (_, i) => ((i + seed) % 7) - 3 + seed);
 }
@@ -74,10 +78,10 @@ describe('PrismaVectorStoreClient', () => {
       findMany.mockResolvedValue([]);
       await client.search('tenant-a', [1, 0, 0], 5);
 
-      const args = findMany.mock.calls[0][0] as {
+      const args = firstArg<{
         where: Record<string, unknown>;
         include: unknown;
-      };
+      }>(findMany);
       expect(args.where).toMatchObject({
         tenantId: 'tenant-a',
         document: { status: 'ready' },
@@ -139,11 +143,11 @@ describe('PrismaVectorStoreClient', () => {
         embeddingModel: 'mock',
       });
 
-      const args = upsert.mock.calls[0][0] as {
+      const args = firstArg<{
         where: { id: string };
         create: Record<string, unknown> & { embedding: Uint8Array };
         update: Record<string, unknown> & { embedding: Uint8Array };
-      };
+      }>(upsert);
       expect(args.where).toEqual({ id: 'chunk-1' });
       expect(args.create).toMatchObject({
         id: 'chunk-1',

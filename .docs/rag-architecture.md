@@ -8,6 +8,14 @@
 > `config/env.validation.ts` (class-validator) no lugar da config Joi; erros pelo
 > `AllExceptionsFilter` do geduc-suporte (`{ statusCode, message, code? }`).
 > O restante (estrutura dos módulos RAG, fronteiras, providers) segue valendo.
+> **Estado atual:** `RAG_STORAGE=mysql` usa repositórios Prisma, e o vector
+> store é o próprio MySQL — `document_chunk.embedding` é um `Bytes @db.Blob`
+> (Float32 little-endian) e a busca por similaridade é uma varredura linear
+> em Node, filtrada por `tenantId` e `dimensions` (`@@index([tenantId,
+> dimensions])`), não um vector store dedicado. `EMBEDDING_PROVIDER=local`
+> (transformers.js) e `LLM_PROVIDER=ollama` (Ollama local, `qwen2.5:7b`) são
+> os providers reais disponíveis, além de `mock`; ver
+> `.docs/ollama-setup.md`.
 
 > Fonte única do detalhe arquitetural do backend de RAG (Retrieval-Augmented Generation).
 > Mesmo espírito do [.docs/architecture.md](../../geduc-api/.docs/architecture.md) do
@@ -350,17 +358,20 @@ Todos os nomes de arquivo em **inglês**.
 
 ## Variáveis de ambiente principais
 
+> Lista real e completa das envs (com defaults) em
+> `backend/src/config/env.validation.ts` e `backend/.env.example`. Resumo:
+
 | Variável | Propósito |
 |---|---|
-| `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE` | Banco relacional (metadados, documentos, histórico de chat) |
-| `VECTOR_STORE_URL`, `VECTOR_STORE_API_KEY`, `VECTOR_STORE_NAMESPACE_PREFIX` | Conexão com o vector store |
-| `EMBEDDING_PROVIDER`, `EMBEDDING_API_KEY`, `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS` | Provider de embedding |
-| `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_MAX_OUTPUT_TOKENS` | Provider de geração |
+| `DATABASE_URL` | MySQL (metadados, documentos, chunks/vetores, histórico de chat) |
+| `RAG_STORAGE` (`mysql` \| `memory`) | Repositórios Prisma vs. adapters in-memory (e2e/dev sem banco) |
+| `EMBEDDING_PROVIDER` (`mock` \| `local`), `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS`, `EMBEDDING_QUERY_PREFIX`, `EMBEDDING_PASSAGE_PREFIX`, `EMBEDDING_CACHE_DIR` | Provider de embedding (transformers.js quando `local`) |
+| `LLM_PROVIDER` (`mock` \| `ollama`), `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_MS`, `LLM_MAX_OUTPUT_TOKENS`, `LLM_CONTEXT_WINDOW_TOKENS` | Provider de geração (Ollama local quando `ollama`) |
 | `CHUNK_SIZE`, `CHUNK_OVERLAP` | Estratégia default de chunking |
 | `RETRIEVAL_TOP_K`, `RERANK_ENABLED` | Parâmetros default de busca |
-| `QUEUE_URL` / `REDIS_URL` | Fila de ingestão assíncrona |
+| `DOCUMENT_MAX_UPLOAD_BYTES` | Teto de tamanho do upload de documento |
 | `JWT_SECRET`, `JWT_EXPIRATION_TIME` | Tokens de auth |
-| `RATE_LIMIT_TTL`, `RATE_LIMIT` | Throttling (proteção de custo de LLM, não só de infra) |
+| `RAG_QUERY_THROTTLE_TTL`, `RAG_QUERY_THROTTLE_LIMIT` | Throttling do `POST /chat/query` (proteção de custo de LLM) |
 | `NODE_ENV` | Controla logging, stack traces em respostas de erro |
 
 ## Pontos específicos de RAG que não têm equivalente direto no geduc-api

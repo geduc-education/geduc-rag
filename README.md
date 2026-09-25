@@ -51,6 +51,22 @@ fvm flutter pub get
 fvm flutter run -d chrome   # API em http://localhost:3000 (--dart-define=API_BASE_URL=...)
 ```
 
+### Ollama e embeddings locais
+
+Por padrão o `.env.example` já sugere os providers reais:
+`EMBEDDING_PROVIDER=local` (modelo `Xenova/multilingual-e5-small`, via
+transformers.js) e `LLM_PROVIDER=ollama` (`qwen2.5:7b`, via
+[Ollama](https://ollama.com) local). `mock` continua disponível para
+testes/CI (é o default do código quando a env não é setada).
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh   # instala o Ollama (Ubuntu)
+ollama pull qwen2.5:7b                          # baixa o modelo
+```
+
+Passo a passo completo (systemd, GPU, teste da API, observações de
+hardware) em [`.docs/ollama-setup.md`](.docs/ollama-setup.md).
+
 ## Testes
 
 ```bash
@@ -65,7 +81,7 @@ cd frontend && fvm flutter analyze && fvm flutter test
 | `auth` | login, troca de senha, `/auth/me` | ✅ |
 | `users` | cadastro com perfis e tenants (1º módulo) | ✅ back + front |
 | `profiles` / `tenants` | apoio ao cadastro de usuários (API) | ✅ API · tela pendente |
-| `documents` · `ingestion` · `embedding` · `retrieval` · `generation` · `chat` | pipeline RAG (herdado do rag-api) | ✅ API com adapters in-memory/mock · tela pendente |
+| `documents` · `ingestion` · `embedding` · `retrieval` · `generation` · `chat` | pipeline RAG (herdado do rag-api) | ✅ back + front · MySQL, embedding local e Ollama |
 
-Detalhes e próximos passos em `.docs/prd/modulo-users.md` e
-`.docs/rag-architecture.md`.
+Detalhes e próximos passos em `.docs/prd/modulo-users.md`,
+`.docs/rag-architecture.md` e `.docs/rag-assistant-feature.md`.

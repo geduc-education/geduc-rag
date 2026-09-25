@@ -72,9 +72,14 @@ test/                # e2e (Prisma stubado — prova o wiring)
    `useFactory` + `inject: []` (tokens string para interfaces).
 3. Import cross-module e SDK de provider externo **só** em `infra/gateways/`.
 4. Sem dependência circular entre módulos.
-5. Estado atual: repositórios, vector store e fila são **in-memory**; embedding
-   e LLM são **mock** (`EMBEDDING_PROVIDER=mock`, `LLM_PROVIDER=mock`). Trocar
-   pela infra real não deve tocar use case, controller nem teste.
+5. Estado atual: `RAG_STORAGE=mysql` (default) usa repositórios Prisma e o
+   vector store é o próprio MySQL (`document_chunk.embedding Bytes`, busca por
+   varredura linear filtrada por tenant); `RAG_STORAGE=memory` mantém os
+   adapters in-memory (e2e, dev sem banco). `EMBEDDING_PROVIDER=local`
+   (transformers.js) e `LLM_PROVIDER=ollama` (Ollama local, `qwen2.5:7b`) são
+   os providers reais; `mock` de ambos continua para testes/CI — ver
+   `.docs/ollama-setup.md`. A seleção é por `useFactory` nos `*.providers.ts`;
+   trocar de provider não deve tocar use case, controller nem teste.
 
 ## Comandos
 

@@ -1,8 +1,10 @@
 name: geduc-rag-db
 
-# MySQL de DESENVOLVIMENTO do geduc-rag. Vetores do RAG NÃO ficam aqui (o
-# MySQL não tem busca vetorial indexada): quando os adapters in-memory forem
-# trocados, o vector store vai para um serviço externo (Qdrant/Pinecone...).
+# MySQL de DESENVOLVIMENTO do geduc-rag. Vetores do RAG ficam aqui mesmo:
+# `document_chunk.embedding` é um `Bytes @db.Blob` (Float32 little-endian) e a
+# busca por similaridade é uma varredura linear filtrada por tenant/dimensões
+# (ver `.docs/rag-architecture.md`), sem índice vetorial nativo. Um vector
+# store externo (Qdrant/Pinecone...) fica para quando o volume exigir.
 # Porta 3307 no host para não colidir com um MySQL local na 3306.
 #
 #   docker compose -f infra/db/docker-compose.yml up -d

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
-import '../../../../core/tenancy/tenant_context.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../shared/components/buttons/app_primary_button.dart';
 import '../../../../shared/components/buttons/app_secondary_button.dart';
@@ -22,8 +21,6 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   late final ChatController _controller;
-  late final TenantContext _tenant;
-  late String? _tenantId;
   final _input = TextEditingController();
   final _scroll = ScrollController();
 
@@ -31,26 +28,15 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _controller = inject<ChatController>();
-    _tenant = inject<TenantContext>();
-    _tenantId = _tenant.activeTenantId;
-    _tenant.addListener(_onTenantChanged);
     _controller.addListener(_scrollToEnd);
   }
 
   @override
   void dispose() {
-    _tenant.removeListener(_onTenantChanged);
     _controller.removeListener(_scrollToEnd);
     _input.dispose();
     _scroll.dispose();
     super.dispose();
-  }
-
-  /// A conversa pertence ao tenant: trocar de tenant abre uma conversa nova.
-  void _onTenantChanged() {
-    if (_tenant.activeTenantId == _tenantId) return;
-    _tenantId = _tenant.activeTenantId;
-    _controller.newConversation();
   }
 
   void _scrollToEnd() {

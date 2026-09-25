@@ -1,9 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geduc_rag/core/auth/auth_user.dart';
 import 'package:geduc_rag/core/errors/app_exception.dart';
+import 'package:geduc_rag/core/storage/local_preferences.dart';
+import 'package:geduc_rag/core/tenancy/tenant_context.dart';
 import 'package:geduc_rag/modules/rag_assistant/data/models/chat_answer.dart';
 import 'package:geduc_rag/modules/rag_assistant/presentation/chat/chat_controller.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/fake_rag_chat_repository.dart';
 
@@ -29,6 +34,26 @@ class _PendingChatRepository extends FakeRagChatRepository {
     asked.add((question: question, conversationId: conversationId));
     return pending.future;
   }
+}
+
+/// Contexto de tenant com os vínculos `a` e `b`, ativo em `a`.
+Future<TenantContext> _tenants() async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  final context = TenantContext(LocalPreferences());
+  await context.syncWith(
+    const AuthUser(
+      id: 'u1',
+      name: 'Ana',
+      email: 'ana@rag.local',
+      profiles: <String>[],
+      permissions: <String>{},
+      tenants: <TenantRef>[
+        TenantRef(id: 'a', name: 'A'),
+        TenantRef(id: 'b', name: 'B'),
+      ],
+    ),
+  );
+  return context;
 }
 
 void main() {
@@ -124,6 +149,60 @@ void main() {
 
       expect(controller.errorMessage, 'Falha ao consultar o provedor de LLM.');
       expect(controller.isSending, isFalse);
+      expect(controller.turns.single.role, ChatRole.user);
+    });
+  });
+
+  group('ChatController com TenantContext', () {
+    test('troca de tenant sem a página montada descarta a conversa', () async {
+      final tenants = await _tenants();
+      final repo = FakeRagChatRepository(answer: _answer);
+      final controller = ChatController(repo, tenants: tenants);
+
+      await controller.send('no tenant a');
+      await tenants.select('b');
+
+      expect(controller.turns, isEmpty);
+      expect(controller.conversationId, isNull);
+
+      await controller.send('no tenant b');
+      expect(repo.asked.last.conversationId, isNull);
+      controller.dispose();
+    });
+
+    test('resposta que chega após a troca de tenant é descartada', () async {
+      final tenants = await _tenants();
+      final repo = _PendingChatRepository();
+      final controller = ChatController(repo, tenants: tenants);
+
+      final pending = controller.send('no tenant a');
+      await tenants.select('b');
+
+      expect(controller.turns, isEmpty);
+      expect(controller.isSending, isFalse);
+
+      repo.pending.complete(_answer);
+      await pending;
+
+      expect(controller.turns, isEmpty);
+      expect(controller.conversationId, isNull);
+      expect(controller.isSending, isFalse);
+      controller.dispose();
+    });
+
+    test('logout (tenant nulo) descarta a conversa', () async {
+      final tenants = await _tenants();
+      final controller = ChatController(
+        FakeRagChatRepository(answer: _answer),
+        tenants: tenants,
+      );
+
+      await controller.send('pergunta');
+      tenants.clear();
+
+      expect(controller.turns, isEmpty);
+      expect(controller.conversationId, isNull);
+      controller.dispose();
     });
   });
 }

@@ -57,7 +57,9 @@ function makeRow(overrides: Partial<PrismaDocument> = {}): PrismaDocument {
 /** Todas as chamadas do mock que recebem `where` precisam filtrar por tenant. */
 function expectEveryWhereHasTenant(mock: jest.Mock, tenantId: string): void {
   expect(mock).toHaveBeenCalled();
-  for (const [args] of mock.calls as [{ where: Record<string, unknown> }][]) {
+  for (const [args] of mock.mock.calls as [
+    { where: Record<string, unknown> },
+  ][]) {
     expect(args.where).toEqual(expect.objectContaining({ tenantId }));
   }
 }

@@ -7,5 +7,9 @@ export interface IDocumentStatusGateway {
     embeddingModel: string,
     embeddingVersion: string,
   ): Promise<void>;
-  markFailed(tenantId: string, documentId: string): Promise<void>;
+  markFailed(
+    tenantId: string,
+    documentId: string,
+    reason?: string,
+  ): Promise<void>;
 }

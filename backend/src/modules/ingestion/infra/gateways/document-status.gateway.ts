@@ -31,11 +31,16 @@ export class DocumentStatusGateway implements IDocumentStatusGateway {
     });
   }
 
-  async markFailed(tenantId: string, documentId: string): Promise<void> {
+  async markFailed(
+    tenantId: string,
+    documentId: string,
+    reason?: string,
+  ): Promise<void> {
     await this.updateDocumentStatus.execute({
       tenantId,
       documentId,
       status: 'failed',
+      reason,
     });
   }
 }

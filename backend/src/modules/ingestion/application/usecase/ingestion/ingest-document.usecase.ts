@@ -48,8 +48,28 @@ export class IngestDocumentUseCase implements IUseCase {
       );
     } catch (error) {
       this.logger.error(`Falha ao ingerir documento ${documentId}`, error);
-      await this.documentStatusGateway.markFailed(tenantId, documentId);
+      await this.markFailedSafely(tenantId, documentId, error);
       throw error;
+    }
+  }
+
+  /**
+   * Registra a falha sem mascarar o erro original: se o documento foi excluído no meio
+   * da ingestão, o `markFailed` rejeita (NotFound) e isso só é logado.
+   */
+  private async markFailedSafely(
+    tenantId: string,
+    documentId: string,
+    error: unknown,
+  ): Promise<void> {
+    const reason = error instanceof Error ? error.message : String(error);
+    try {
+      await this.documentStatusGateway.markFailed(tenantId, documentId, reason);
+    } catch (markError) {
+      this.logger.warn(
+        `Não foi possível marcar o documento ${documentId} como failed`,
+        markError,
+      );
     }
   }
 

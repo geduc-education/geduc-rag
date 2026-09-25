@@ -8,6 +8,8 @@ export interface UpdateDocumentStatusInput {
   status: 'processing' | 'ready' | 'failed';
   embeddingModel?: string;
   embeddingVersion?: string;
+  /** Motivo da falha (só com `status: 'failed'`); truncado pela entidade. */
+  reason?: string;
 }
 
 /** Exportado para o `ingestion` refletir o progresso da ingestão de volta no documento. */
@@ -27,7 +29,7 @@ export class UpdateDocumentStatusUseCase implements IUseCase {
         input.embeddingModel ?? '',
         input.embeddingVersion ?? '',
       );
-    } else document.markFailed();
+    } else document.markFailed(input.reason);
 
     await this.repository.save(document);
   }

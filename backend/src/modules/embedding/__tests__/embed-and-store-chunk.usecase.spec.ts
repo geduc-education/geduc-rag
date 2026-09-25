@@ -37,6 +37,8 @@ describe('EmbedAndStoreChunkUseCase', () => {
         chunkId: 'chunk-1',
         documentId: 'doc-1',
         tenantId: 'tenant-1',
+        filename: 'manual.pdf',
+        chunkIndex: 3,
         content: 'trecho do documento',
       });
 
@@ -44,9 +46,20 @@ describe('EmbedAndStoreChunkUseCase', () => {
         embeddingModel: 'mock-model',
         embeddingVersion: 'v1',
       });
-      expect(vectorStoreGateway.upsertChunk).toHaveBeenCalledWith(
-        expect.objectContaining({ chunkId: 'chunk-1', tenantId: 'tenant-1' }),
+      expect(embeddingGateway.embed).toHaveBeenCalledWith(
+        'trecho do documento',
+        'passage',
       );
+      expect(vectorStoreGateway.upsertChunk).toHaveBeenCalledWith({
+        chunkId: 'chunk-1',
+        documentId: 'doc-1',
+        tenantId: 'tenant-1',
+        filename: 'manual.pdf',
+        chunkIndex: 3,
+        content: 'trecho do documento',
+        vector: Array(dimensions).fill(0.5),
+        embeddingModel: 'mock-model',
+      });
     });
   });
 
@@ -59,6 +72,8 @@ describe('EmbedAndStoreChunkUseCase', () => {
           chunkId: 'chunk-1',
           documentId: 'doc-1',
           tenantId: 'tenant-1',
+          filename: 'manual.pdf',
+          chunkIndex: 0,
           content: 'trecho',
         }),
       ).rejects.toThrow();

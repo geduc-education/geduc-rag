@@ -58,6 +58,22 @@ describe('IngestDocumentUseCase', () => {
         'doc-1',
       );
       expect(embeddingIngestGateway.embedAndStore).toHaveBeenCalledTimes(2);
+      expect(embeddingIngestGateway.embedAndStore).toHaveBeenNthCalledWith(1, {
+        chunkId: 'doc-1:0',
+        documentId: 'doc-1',
+        tenantId: 'tenant-1',
+        filename: 'a.txt',
+        chunkIndex: 0,
+        content: '0123456789',
+      });
+      expect(embeddingIngestGateway.embedAndStore).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          chunkId: 'doc-1:1',
+          filename: 'a.txt',
+          chunkIndex: 1,
+        }),
+      );
       expect(documentStatusGateway.markReady).toHaveBeenCalledWith(
         'tenant-1',
         'doc-1',

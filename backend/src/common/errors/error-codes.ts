@@ -59,6 +59,14 @@ export const ERROR_CODES = {
   USER_SELF_ACTION: 'USER_SELF_ACTION',
   /** Redefinir senha de usuário inativo (reative antes). 409. */
   USER_INACTIVE: 'USER_INACTIVE',
+
+  // --- Documentos ---------------------------------------------------------
+  /** Upload acima de `DOCUMENT_MAX_UPLOAD_BYTES` (MulterError LIMIT_FILE_SIZE). 413. */
+  ATTACHMENT_TOO_LARGE: 'ATTACHMENT_TOO_LARGE',
+  /** Arquivo fora dos formatos aceitos (.md, .txt, .pdf, .docx). 400. */
+  UNSUPPORTED_DOCUMENT_TYPE: 'UNSUPPORTED_DOCUMENT_TYPE',
+  /** Documento sem texto extraível (ex.: PDF escaneado). 400. */
+  DOCUMENT_TEXT_EMPTY: 'DOCUMENT_TEXT_EMPTY',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

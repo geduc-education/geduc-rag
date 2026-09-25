@@ -6,6 +6,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUrl,
   Matches,
   Min,
   MinLength,
@@ -77,8 +78,9 @@ export class EnvironmentVariables {
   @Min(1)
   RAG_QUERY_THROTTLE_LIMIT: number = 10;
 
-  // --- Embedding provider (mock enquanto não há provider real) ------------
-  @IsIn(['mock'])
+  // --- Embedding provider -----------------------------------------------
+  // `mock` para testes/CI; `local` roda o modelo via transformers.js.
+  @IsIn(['mock', 'local'])
   EMBEDDING_PROVIDER: string = 'mock';
 
   @IsOptional()
@@ -86,24 +88,48 @@ export class EnvironmentVariables {
   EMBEDDING_API_KEY?: string;
 
   @IsString()
-  EMBEDDING_MODEL: string = 'text-embedding-3-small';
+  EMBEDDING_MODEL: string = 'Xenova/multilingual-e5-small';
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  EMBEDDING_DIMENSIONS: number = 1536;
+  EMBEDDING_DIMENSIONS: number = 384;
 
-  // --- LLM provider (mock enquanto não há provider real) ------------------
-  @IsIn(['mock'])
+  // Prefixos do e5; configuráveis para quem trocar de modelo.
+  @IsString()
+  EMBEDDING_QUERY_PREFIX: string = 'query: ';
+
+  @IsString()
+  EMBEDDING_PASSAGE_PREFIX: string = 'passage: ';
+
+  // Diretório de cache do modelo baixado (opcional).
+  @IsOptional()
+  @IsString()
+  EMBEDDING_CACHE_DIR?: string;
+
+  // --- LLM provider -------------------------------------------------------
+  // `mock` para testes/CI; `ollama` chama o servidor local via HTTP.
+  @IsIn(['mock', 'ollama'])
   LLM_PROVIDER: string = 'mock';
+
+  @IsUrl({
+    require_tld: false,
+    require_protocol: true,
+    protocols: ['http', 'https'],
+  })
+  LLM_BASE_URL: string = 'http://localhost:11434';
 
   @IsOptional()
   @IsString()
   LLM_API_KEY?: string;
 
-  @IsOptional()
   @IsString()
-  LLM_MODEL?: string;
+  LLM_MODEL: string = 'qwen2.5:7b';
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  LLM_TIMEOUT_MS: number = 120000;
 
   @Type(() => Number)
   @IsInt()
@@ -135,6 +161,16 @@ export class EnvironmentVariables {
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   RERANK_ENABLED: boolean = false;
+
+  // --- Persistência e upload ----------------------------------------------
+  // `mysql` usa os repositórios Prisma; `memory` mantém os adapters in-memory.
+  @IsIn(['mysql', 'memory'])
+  RAG_STORAGE: string = 'mysql';
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  DOCUMENT_MAX_UPLOAD_BYTES: number = 10485760;
 }
 
 /**

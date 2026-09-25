@@ -1,7 +1,7 @@
 {
   "name": "geduc-rag-backend",
   "version": "0.0.1",
-  "description": "Backend da plataforma de RAG (geduc-rag) — NestJS + Prisma + PostgreSQL",
+  "description": "Backend da plataforma de RAG (geduc-rag) — NestJS + Prisma + MySQL",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -28,6 +28,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.3.0",
     "@nestjs/common": "^11.1.21",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.21",
@@ -41,7 +42,9 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "helmet": "^8.2.0",
+    "mammoth": "^1.12.3",
     "nestjs-pino": "^4.6.1",
+    "pdf-parse": "^2.4.5",
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
@@ -55,6 +58,7 @@
     "@nestjs/testing": "^11.1.21",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "^24.12.4",
     "@types/supertest": "^7.2.0",
     "dotenv": "^16.4.5",

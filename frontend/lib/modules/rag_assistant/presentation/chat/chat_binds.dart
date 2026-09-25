@@ -1,5 +1,13 @@
 import 'package:flutter_modular/flutter_modular.dart';
 
-/// Binds da tela Chat (repository e controller). Stub: preenchido quando a
-/// tela for implementada.
-void registerRagChatBinds(ModularContext c) {}
+import '../../data/rag_chat_repository.dart';
+import 'chat_controller.dart';
+
+/// Binds da tela Chat. O repositório é registrado em
+/// `registerRagAssistantBinds`; aqui entra só o controller, singleton no
+/// escopo do shell para a conversa sobreviver à troca de aba.
+void registerRagChatBinds(ModularContext c) {
+  c.addLazySingleton<ChatController>(
+    () => ChatController(inject<IRagChatRepository>()),
+  );
+}

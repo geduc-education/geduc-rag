@@ -17,7 +17,13 @@ function makeInput(
 }
 
 function makeRepository(): jest.Mocked<IDocumentRepository> {
-  return { create: jest.fn(), findById: jest.fn(), save: jest.fn() };
+  return {
+    create: jest.fn(),
+    findById: jest.fn(),
+    save: jest.fn(),
+    list: jest.fn(),
+    delete: jest.fn(),
+  };
 }
 
 function makeQueueGateway(): jest.Mocked<IIngestionQueueGateway> {

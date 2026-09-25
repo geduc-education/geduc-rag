@@ -28,6 +28,25 @@ export class InMemoryDocumentRepository implements IDocumentRepository {
     );
   }
 
+  async list(
+    tenantId: string,
+    page: number,
+    limit: number,
+  ): Promise<{ data: DocumentEntity[]; total: number }> {
+    const ofTenant = [...this.documents.values()]
+      .filter((document) => document.tenantId === tenantId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const offset = (page - 1) * limit;
+    return {
+      data: ofTenant.slice(offset, offset + limit),
+      total: ofTenant.length,
+    };
+  }
+
+  async delete(tenantId: string, documentId: string): Promise<boolean> {
+    return this.documents.delete(this.key(tenantId, documentId));
+  }
+
   private key(tenantId: string, documentId: string): string {
     return `${tenantId}:${documentId}`;
   }

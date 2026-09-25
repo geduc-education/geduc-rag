@@ -47,4 +47,58 @@ describe('DocumentEntity', () => {
       expect(document.status).toBe('failed');
     });
   });
+
+  describe('metadados do arquivo', () => {
+    it('usa text/plain e os bytes UTF-8 de content como default', () => {
+      const document = DocumentEntity.create(makeInput({ content: 'ação' }));
+      expect(document.mimeType).toBe('text/plain');
+      expect(document.sizeBytes).toBe(Buffer.byteLength('ação', 'utf8'));
+      expect(document.createdById).toBeNull();
+      expect(document.errorMessage).toBeNull();
+    });
+
+    it('respeita mimeType, sizeBytes e createdById informados', () => {
+      const document = DocumentEntity.create(
+        makeInput({
+          mimeType: 'application/pdf',
+          sizeBytes: 2048,
+          createdById: 'user-1',
+        }),
+      );
+      expect(document.mimeType).toBe('application/pdf');
+      expect(document.sizeBytes).toBe(2048);
+      expect(document.createdById).toBe('user-1');
+    });
+  });
+
+  describe('motivo de falha', () => {
+    it('markFailed grava errorMessage e markReady o limpa', () => {
+      const document = DocumentEntity.create(makeInput());
+      document.markFailed('x');
+      expect(document.status).toBe('failed');
+      expect(document.errorMessage).toBe('x');
+
+      document.markReady('mock-model', 'v1');
+      expect(document.errorMessage).toBeNull();
+    });
+
+    it('markProcessing limpa errorMessage', () => {
+      const document = DocumentEntity.create(makeInput());
+      document.markFailed('falhou');
+      document.markProcessing();
+      expect(document.errorMessage).toBeNull();
+    });
+
+    it('markFailed sem motivo deixa errorMessage nulo', () => {
+      const document = DocumentEntity.create(makeInput());
+      document.markFailed();
+      expect(document.errorMessage).toBeNull();
+    });
+
+    it('trunca errorMessage em 500 caracteres', () => {
+      const document = DocumentEntity.create(makeInput());
+      document.markFailed('a'.repeat(800));
+      expect(document.errorMessage).toHaveLength(500);
+    });
+  });
 });

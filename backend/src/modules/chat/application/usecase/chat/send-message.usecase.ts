@@ -9,9 +9,11 @@ import { IConversationRepository } from '../../interface/repository/conversation
 import { IRetrievalContextGateway } from '../../interface/gateways/retrieval-context.gateway.interface';
 import { IAnswerGenerationGateway } from '../../interface/gateways/answer-generation.gateway.interface';
 import { IUseCase } from '../../../../../@core/shared/use-case.interface';
+import NotFound from '../../../../../@core/shared/exceptions/400/not-found-error';
 
 export interface SendMessageInput {
   tenantId: string;
+  userId: string;
   conversationId?: string;
   question: string;
 }
@@ -60,18 +62,28 @@ export class SendMessageUseCase implements IUseCase {
     return { conversationId: conversation.conversationId, answer, citations };
   }
 
+  /**
+   * Sem `conversationId`, abre uma conversa nova do usuário. Com ele, só carrega
+   * a conversa do próprio (tenant, usuário); id alheio ou inexistente é 404 —
+   * criar com esse id colidiria com a conversa de outro usuário.
+   */
   private async loadOrCreateConversation(
     input: SendMessageInput,
   ): Promise<ConversationEntity> {
-    const conversationId = input.conversationId ?? randomUUID();
+    if (!input.conversationId) {
+      return ConversationEntity.create({
+        conversationId: randomUUID(),
+        tenantId: input.tenantId,
+        userId: input.userId,
+      });
+    }
     const existing = await this.conversationRepository.findById(
       input.tenantId,
-      conversationId,
+      input.userId,
+      input.conversationId,
     );
-    return (
-      existing ??
-      ConversationEntity.create({ conversationId, tenantId: input.tenantId })
-    );
+    if (!existing) throw new NotFound('Conversa não encontrada.');
+    return existing;
   }
 
   private buildHistory(

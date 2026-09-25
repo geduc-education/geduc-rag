@@ -9,9 +9,13 @@ export class InMemoryConversationRepository implements IConversationRepository {
 
   async findById(
     tenantId: string,
+    userId: string,
     conversationId: string,
   ): Promise<ConversationEntity | null> {
-    return this.conversations.get(this.key(tenantId, conversationId)) ?? null;
+    const conversation = this.conversations.get(
+      this.key(tenantId, conversationId),
+    );
+    return conversation?.userId === userId ? conversation : null;
   }
 
   async save(conversation: ConversationEntity): Promise<void> {

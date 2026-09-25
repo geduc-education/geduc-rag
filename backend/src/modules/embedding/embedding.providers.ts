@@ -4,6 +4,7 @@ import { VectorStoreClient } from '../../@core/infra/vector-store/vector-store.c
 import { IEmbeddingProviderGateway } from './application/interface/gateways/embedding-provider.gateway.interface';
 import { IVectorStoreGateway } from './application/interface/gateways/vector-store.gateway.interface';
 import { EmbeddingProviderGateway } from './infra/gateways/embedding-provider.gateway';
+import { LocalEmbeddingProviderGateway } from './infra/gateways/local-embedding-provider.gateway';
 import { VectorStoreGateway } from './infra/gateways/vector-store.gateway';
 import { EmbedTextUseCase } from './application/usecase/embedding/embed-text.usecase';
 import { EmbedAndStoreChunkUseCase } from './application/usecase/embedding/embed-and-store-chunk.usecase';
@@ -13,9 +14,19 @@ const EMBEDDING_VERSION = 'v1';
 
 export namespace EMBEDDING_PROVIDERS {
   export namespace GATEWAY {
+    /** `EMBEDDING_PROVIDER=local` usa transformers.js; qualquer outro valor usa o mock. */
     export const EMBEDDING_PROVIDER_GATEWAY = {
       provide: 'IEmbeddingProviderGateway',
-      useClass: EmbeddingProviderGateway,
+      useFactory: (config: ConfigService): IEmbeddingProviderGateway =>
+        config.get<string>('EMBEDDING_PROVIDER') === 'local'
+          ? new LocalEmbeddingProviderGateway({
+              model: config.get<string>('EMBEDDING_MODEL')!,
+              queryPrefix: config.get<string>('EMBEDDING_QUERY_PREFIX')!,
+              passagePrefix: config.get<string>('EMBEDDING_PASSAGE_PREFIX')!,
+              cacheDir: config.get<string>('EMBEDDING_CACHE_DIR'),
+            })
+          : new EmbeddingProviderGateway(config),
+      inject: [ConfigService],
     };
 
     export const VECTOR_STORE_GATEWAY = {

@@ -21,6 +21,10 @@
 - 2026-09-25 · T-09 · onda 2 — extração de PDF numa worker_thread (pdfjs usa import() dinâmico que quebra no jest); desvio aceito. PDF corrompido responder 500 em vez de 400 e ausência de timeout na thread ficam como pendências para a T-14/revisão final.
 - 2026-09-25 · T-10 · onda 2 — a sugestão do revisor sobre dois envios concorrentes na mesma conversa perderem o segundo turno em silêncio (count + slice) fica como pendência destacada para a revisão final.
 - 2026-09-25 · T-13 · onda 2 — `RagDocumentPage.fromJson` extra, fora da especificação, aceito.
+- 2026-09-25 · T-14 · onda 3 — remoção do `POST /documents` JSON antigo, substituído pelo multipart: aceito (contrato novo do plano).
+- 2026-09-25 · T-14 · onda 3 — 413 via interceptor no controller porque o `FileInterceptor` não deixa o `MulterError` chegar ao filtro global: aceito.
+- 2026-09-25 · T-15 · onda 3 — sugestão "troca de tenant ignorada com a página Documentos aberta" não promovida a bloqueante (sem vazamento: usuário tem acesso aos dois tenants; delete nesse estado dá 404); segue como pendência para a revisão final, junto com timer órfão em corrida e resposta de página obsoleta.
+- 2026-09-25 · T-16 · onda 3 — construtor `ChatController(repo, {TenantContext? tenants})` e contador de geração para descartar resposta em voo: aceitos (fix rodada 1, commit 4c5bb29). Pendência: singleton sobrevivendo a logout/login de outro usuário, a confirmar na revisão final.
 
 ## Bloqueios
 - O repositório não tem nenhum commit (branch `main` sem HEAD). A branch `task/assistente-rag-ollama` e o BASE da onda 1 exigem um commit inicial em `main` antes da Fase 4. Desbloqueio: o usuário autoriza o commit inicial da árvore atual (respeitando o `.gitignore`).
@@ -44,6 +48,10 @@
 - [T-08] `IDocumentStatusGateway.markFailed(tenantId, documentId, reason?)` e `UpdateDocumentStatusInput.reason?` entregues (711afe6); a ingestão engole a rejeição do `markFailed` (loga warn) e rejeita com o erro original. `DOCUMENT_REPOSITORY` agora é `useFactory` sobre `ConfigService`+`PrismaService` (RAG_STORAGE=memory → in-memory). `PrismaDocumentRepository.save` usa `updateMany({ where: { id, tenantId } })`.
 - [T-10] `MessageCitation` agora exige `filename` (chat/domain/entities/message.entity.ts): todo mock de `IRetrievalContextGateway`/citação no chat precisa do campo. `CONVERSATION_REPOSITORY` virou `useFactory` por `RAG_STORAGE` (inject `ConfigService`, `PrismaService`); `PrismaConversationRepository` entregue (2dc6f62). O controller já pode retornar `citations[].filename`.
 - [T-09] Pronto: token `TEXT_EXTRACTOR_GATEWAY = 'ITextExtractorGateway'`, `ITextExtractorGateway`, `ExtractTextInput`, `SUPPORTED_DOCUMENT_EXTENSIONS` (+ tipo `SupportedDocumentExtension`) em `backend/src/modules/documents/application/interface/gateways/text-extractor.gateway.interface.ts`; implementação `TextExtractorGateway` em `infra/gateways/text-extractor.gateway.ts` (não registrada em `documents.providers.ts`; o T-14 registra). O PDF é parseado numa `worker_thread` (eval) porque o pdfjs do pdf-parse 2.4.5 carrega o worker via `import()` dinâmico, que falha na VM do jest; nenhum mock de pdf-parse é necessário no e2e. PDF corrompido lança `Error` genérico (vira 500), não 400.
+- [T-16] Tela Chat pronta (a448b3c): `ChatController` é `addLazySingleton` em `registerRagChatBinds`; `ChatTurn`/`ChatRole` em `presentation/chat/chat_controller.dart`. A `ChatPage` reinicia a conversa quando o tenant ativo muda (listener no `TenantContext`).
+- [T-15] `DocumentsController` é registrado como factory (`c.add`) em `documents_binds.dart`, e não como lazy singleton: a `DocumentsPage` o descarta no `dispose`, o que cancela o polling. `upload`/`delete` devolvem `Future<String?>` (null = sucesso). `file_picker` 13 não tem `withData`, e os bytes vêm de `PlatformFile.readAsBytes()` (9da3a98).
+- [T-14] API de documentos pronta (314864e): `POST /documents` agora é multipart (campo `file`, resposta 202 `{ documentId, status }`), `GET /documents?page&limit` → `{ data: DocumentSummary[], total }`, `DELETE /documents/:id` → 204 (404 fora do tenant). O `POST /documents` JSON antigo (`filename`/`content`) deixou de existir. O `FileInterceptor` converte o `LIMIT_FILE_SIZE` em `PayloadTooLargeException` sem code (o ramo `MulterError` do `all-exceptions.filter.ts` não é atingido); o `AttachmentTooLargeInterceptor` em `document.controller.ts` põe o `ATTACHMENT_TOO_LARGE`. Token `'IDocumentVectorsGateway'` (`DOCUMENT_VECTORS_GATEWAY`) e `TEXT_EXTRACTOR_GATEWAY` registrados em `documents.providers.ts`.
+- [T-16] Correção 1 (4c5bb29): `ChatController(repo, {TenantContext? tenants})` observa o tenant ativo e descarta a conversa (e a resposta em voo) na troca de tenant ou no logout; a `ChatPage` não observa mais o `TenantContext`.
 
 ## Pendências
 - T-02: EMBEDDING_PROVIDER, LLM_PROVIDER e RAG_STORAGE ficaram tipados como string, e não como as uniões literais da Interface; o @IsIn garante o valor em runtime, mas quem consome (T-07/T-11/T-12) não ganha narrowing — backend/src/config/env.validation.ts:84,113,168
@@ -77,6 +85,19 @@
 - T-13: `upload` devolve `''` quando a resposta 202 vem sem `documentId`, passando o erro de contrato em silêncio para a tela — frontend/lib/modules/rag_assistant/data/rag_documents_repository.dart:47
 - T-13: `createdAt` ausente ou inválido vira epoch UTC sem aviso, podendo exibir 1970 na lista (desvio aditivo já registrado no relatório) — frontend/lib/modules/rag_assistant/data/models/rag_document.dart:51-53
 - T-13: os repositórios HTTP não têm teste com um Dio fake (path, query, campo `file` do FormData, `conversationId` omitido quando nulo) — frontend/lib/modules/rag_assistant/data/rag_documents_repository.dart:24-49, frontend/lib/modules/rag_assistant/data/rag_chat_repository.dart:16-25
+- T-14: `GET /documents` sem schema de resposta no Swagger (`@ApiOkResponse` com `data`/`total`); `POST` não documenta o 400 `UNSUPPORTED_DOCUMENT_TYPE` — backend/src/modules/documents/controllers/document.controller.ts:132 e :107
+- T-14: upload sem o campo `file` responde 400 sem `code` e sem teste — backend/src/modules/documents/controllers/document.controller.ts:121
+- T-14: `import { memoryStorage } from 'multer'` usa dependência transitiva, ausente do `package.json` (só `@types/multer`) — backend/src/modules/documents/documents.module.ts:3
+- T-14: o ramo `MulterError`/`LIMIT_FILE_SIZE` do filtro global fica inalcançável com o `FileInterceptor`; comentários descrevem um caminho que não acontece — backend/src/common/filters/all-exceptions.filter.ts:70, backend/src/common/errors/error-codes.ts:64
+- T-14: os casos do `describe('documentos (multipart) e chat')` dependem da ordem (compartilham `documentId`); `MAX_UPLOAD_BYTES` é o default fixo, não lido da config — backend/test/app.e2e-spec.ts:133 e :114
+- T-15: `_schedulePoll` sobrescreve `_pollTimer` sem cancelar o anterior; corrida pode deixar um timer órfão que roda depois do `dispose` — frontend/lib/modules/rag_assistant/presentation/documents/documents_controller.dart:104
+- T-15: `_fetch` não descarta resposta obsoleta: um `list` do polling pode sobrescrever `_items` de uma página diferente da atual — frontend/lib/modules/rag_assistant/presentation/documents/documents_controller.dart:81
+- T-15: excluir o último item de uma página > 1 zera `_items` e vai para `RagViewState.empty` com `total > 0`, sem navegação para voltar — frontend/lib/modules/rag_assistant/presentation/documents/documents_controller.dart:73
+- T-15: a tela não reage à troca do tenant ativo: a lista continua a do tenant anterior e o excluir manda o id antigo com o header novo — frontend/lib/modules/rag_assistant/presentation/documents/documents_page.dart:39
+- T-15: `DocumentsPage` sem teste de widget para o gating por `document:manage`, o `AppConfirmDialog` e o toast — frontend/lib/modules/rag_assistant/presentation/documents/documents_page.dart:106
+- T-16: o singleton da conversa pode sobreviver a logout e login de outro usuário no mesmo navegador; confirmar o descarte ou limpar a conversa quando `activeTenantId` virar `null` — frontend/lib/modules/auth/services/session_service.dart:76-79
+- T-16: sem widget test de `ChatPage`, `ChatBubble` ou `CitationCard` — frontend/test/rag_assistant/
+- T-16: o teste de erro não verifica que a bolha do usuário fica na lista nem que nenhuma bolha do assistente é criada — frontend/test/rag_assistant/chat_controller_test.dart:115-128
 
 ## Riscos
 - `@huggingface/transformers` baixa binários do `onnxruntime-node` no `npm install` (T-02) e o modelo (cerca de 120 MB) na primeira inferência. Mitigação: o loader é lazy e injetável, os testes usam fake e o `EMBEDDING_CACHE_DIR` é configurável. O T-18 exige rede na primeira execução.
@@ -95,5 +116,6 @@
 - Commits por onda:
   - Onda 1: BASE 07b0c47 → HEAD bdba344 (ee12040, 92976a1, 605a596, 11a8dec, de477ff, 10d3f39, a5810ad, bd00b01, c4317a3, f6b7b89, bdba344)
   - Onda 2: BASE d5ccdf4 → HEAD 7fc140b (58f2e1e, 8e6cf99, 91df24f, 603e8cf, a7cbd47, dc43f0e, 39db4ef, d747195, c2d3e8f, be6d211, 711afe6, b58f222, 2dc6f62, 97d750f, 7fc140b)
-- Último status conhecido: Onda 2 fechada — T-07 a T-13 concluídas ([x]), gate aprovado (jest 170/170, e2e 7/7, tsc/eslint/build exit 0, flutter test 29/29, analyze limpo), revisões rodada 1 aprovadas sem bloqueantes; critério de smoke (T-18) não se aplica à onda 2.
-- Próxima onda recomendada: onda 3
+  - Onda 3: BASE 287b76c → HEAD 4c5bb29 (dafd783, a0740e8, 11fe8b5, a448b3c, 9da3a98, 314864e, 4c5bb29)
+- Último status conhecido: Onda 3 fechada — T-14, T-15 e T-16 concluídas ([x]); gate aprovado; T-14 e T-15 aprovadas na rodada 1 com sugestões; T-16 reprovada na rodada 1 (bloqueante: reset por troca de tenant só com a ChatPage montada), corrigida (commit 4c5bb29) e aprovada na re-validação e na rodada 2; validação cruzada pós-correção com árvore parada: tsc/eslint exit 0, jest 175/175, e2e 13/13, flutter analyze limpo, flutter test 44/44.
+- Próxima onda recomendada: onda 4

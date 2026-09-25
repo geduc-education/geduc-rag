@@ -15,9 +15,9 @@
 | T-11 | backend | Gateway de embeddings locais com transformers.js | T-02, T-03 | sim | alta | Tesla | [x] |
 | T-12 | backend | Gateway Ollama com timeout e erros como LlmProviderError | T-02 | sim | média | Levi | [x] |
 | T-13 | frontend | Camada de dados do rag_assistant (modelos, repositórios, fakes) | T-04, T-05, T-06 | sim | média | Aang | [x] |
-| T-14 | backend | API de documentos: upload multipart, listagem paginada, exclusão e e2e | T-02, T-03, T-04, T-07, T-08, T-09, T-10 | sim | alta | Darwin | [ ] |
-| T-15 | frontend | Tela Documentos (upload, lista com status, polling, excluir) | T-06, T-13 | sim | média | Aang | [ ] |
-| T-16 | frontend | Tela Chat (bolhas, citações, nova conversa, loading) | T-06, T-13 | sim | média | Goku | [ ] |
+| T-14 | backend | API de documentos: upload multipart, listagem paginada, exclusão e e2e | T-02, T-03, T-04, T-07, T-08, T-09, T-10 | sim | alta | Darwin | [x] |
+| T-15 | frontend | Tela Documentos (upload, lista com status, polling, excluir) | T-06, T-13 | sim | média | Aang | [x] |
+| T-16 | frontend | Tela Chat (bolhas, citações, nova conversa, loading) | T-06, T-13 | sim | média | Goku | [x] |
 | T-17 | docs | .env.example, README, backend/CLAUDE.md, .docs e guia do Ollama no Ubuntu | T-11, T-12, T-14, T-15, T-16 | não | simples | Gandalf | [ ] |
 | T-18 | qa | Script de smoke ponta a ponta com Ollama e embeddings reais | T-14, T-17 | não | simples | Sherlock | [ ] |
 

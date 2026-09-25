@@ -1,14 +1,26 @@
 import { IDocumentRepository } from './application/interface/repository/document.repository.interface';
 import { IIngestionQueueGateway } from './application/interface/gateways/ingestion-queue.gateway.interface';
+import {
+  ITextExtractorGateway,
+  TEXT_EXTRACTOR_GATEWAY,
+} from './application/interface/gateways/text-extractor.gateway.interface';
+import {
+  DOCUMENT_VECTORS_GATEWAY,
+  IDocumentVectorsGateway,
+} from './application/interface/gateways/document-vectors.gateway.interface';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { InMemoryDocumentRepository } from './infra/database/repositories/in-memory-document.repository';
 import { PrismaDocumentRepository } from './infra/database/repositories/prisma-document.repository';
 import { IngestionQueueGateway } from './infra/gateways/ingestion-queue.gateway';
+import { TextExtractorGateway } from './infra/gateways/text-extractor.gateway';
+import { DocumentVectorsGateway } from './infra/gateways/document-vectors.gateway';
 import { UploadDocumentUseCase } from './application/usecase/document/upload-document.usecase';
 import { GetDocumentStatusUseCase } from './application/usecase/document/get-document-status.usecase';
 import { GetDocumentContentUseCase } from './application/usecase/document/get-document-content.usecase';
 import { UpdateDocumentStatusUseCase } from './application/usecase/document/update-document-status.usecase';
+import { ListDocumentsUseCase } from './application/usecase/document/list-documents.usecase';
+import { DeleteDocumentUseCase } from './application/usecase/document/delete-document.usecase';
 
 export namespace DOCUMENTS_PROVIDERS {
   export namespace REPOSITORY {
@@ -31,6 +43,16 @@ export namespace DOCUMENTS_PROVIDERS {
       provide: 'IIngestionQueueGateway',
       useClass: IngestionQueueGateway,
     };
+
+    export const TEXT_EXTRACTOR = {
+      provide: TEXT_EXTRACTOR_GATEWAY,
+      useClass: TextExtractorGateway,
+    };
+
+    export const DOCUMENT_VECTORS = {
+      provide: DOCUMENT_VECTORS_GATEWAY,
+      useClass: DocumentVectorsGateway,
+    };
   }
 
   export namespace USE_CASES {
@@ -38,11 +60,32 @@ export namespace DOCUMENTS_PROVIDERS {
       provide: UploadDocumentUseCase,
       useFactory: (
         repository: IDocumentRepository,
+        textExtractor: ITextExtractorGateway,
         queueGateway: IIngestionQueueGateway,
-      ) => new UploadDocumentUseCase(repository, queueGateway),
+      ) => new UploadDocumentUseCase(repository, textExtractor, queueGateway),
       inject: [
         REPOSITORY.DOCUMENT_REPOSITORY.provide,
+        GATEWAY.TEXT_EXTRACTOR.provide,
         GATEWAY.INGESTION_QUEUE_GATEWAY.provide,
+      ],
+    };
+
+    export const LIST_DOCUMENTS = {
+      provide: ListDocumentsUseCase,
+      useFactory: (repository: IDocumentRepository) =>
+        new ListDocumentsUseCase(repository),
+      inject: [REPOSITORY.DOCUMENT_REPOSITORY.provide],
+    };
+
+    export const DELETE_DOCUMENT = {
+      provide: DeleteDocumentUseCase,
+      useFactory: (
+        repository: IDocumentRepository,
+        vectorsGateway: IDocumentVectorsGateway,
+      ) => new DeleteDocumentUseCase(repository, vectorsGateway),
+      inject: [
+        REPOSITORY.DOCUMENT_REPOSITORY.provide,
+        GATEWAY.DOCUMENT_VECTORS.provide,
       ],
     };
 

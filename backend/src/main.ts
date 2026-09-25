@@ -14,8 +14,8 @@ import { parseCorsOrigins } from './config/cors';
 import { buildSwaggerConfig } from './config/swagger.config';
 
 /**
- * Teto do corpo JSON. Documentos chegam como texto puro no `POST /documents`
- * (herdado do rag-api) — acima disso a ingestão precisa virar upload.
+ * Teto do corpo JSON. Documentos não passam por aqui: o `POST /documents` é
+ * multipart (limite próprio em `DOCUMENT_MAX_UPLOAD_BYTES`, no `MulterModule`).
  */
 const JSON_BODY_LIMIT = '1mb';
 

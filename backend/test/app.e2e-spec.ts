@@ -111,18 +111,12 @@ describe('App (e2e, Prisma stubado)', () => {
     expect(res.body).toMatchObject({ code: 'TENANT_OUT_OF_SCOPE' });
   });
 
-  it('fluxo ponta a ponta: ingestão → status ready → resposta com citação', async () => {
-    const headers = { ...auth(), 'tenant-id': TENANT };
-    const upload = await request(app.getHttpServer())
-      .post('/documents')
-      .set(headers)
-      .send({
-        filename: 'matricula.md',
-        content: 'A matrícula acontece em janeiro, na secretaria da escola.',
-      });
-    expect(upload.status).toBe(202);
-    const { documentId } = upload.body as { documentId: string };
+  const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
+  async function waitForReady(
+    documentId: string,
+    headers: Record<string, string>,
+  ): Promise<string> {
     let status = '';
     for (let i = 0; i < 50 && status !== 'ready'; i++) {
       await new Promise((resolve) => setTimeout(resolve, 20));
@@ -131,16 +125,119 @@ describe('App (e2e, Prisma stubado)', () => {
         .set(headers);
       status = (res.body as { status: string }).status;
     }
-    expect(status).toBe('ready');
+    return status;
+  }
 
-    const answer = await request(app.getHttpServer())
-      .post('/chat/query')
-      .set(headers)
-      .send({ question: 'Quando é a matrícula?' });
-    expect(answer.status).toBe(200);
-    expect(answer.body).toMatchObject({
-      conversationId: expect.any(String) as string,
-      citations: [expect.objectContaining({ documentId }) as object],
+  describe('documentos (multipart) e chat', () => {
+    const headers = () => ({ ...auth(), 'tenant-id': TENANT });
+    let documentId = '';
+
+    it('POST /documents multipart .md → 202 e status chega a ready', async () => {
+      const upload = await request(app.getHttpServer())
+        .post('/documents')
+        .set(headers())
+        .attach(
+          'file',
+          Buffer.from(
+            'A matrícula acontece em janeiro, na secretaria da escola.',
+          ),
+          { filename: 'matricula.md', contentType: 'text/markdown' },
+        );
+      expect(upload.status).toBe(202);
+      documentId = (upload.body as { documentId: string }).documentId;
+      expect(documentId).toEqual(expect.any(String));
+
+      expect(await waitForReady(documentId, headers())).toBe('ready');
+    });
+
+    it('POST /chat/query devolve citação com o filename do upload', async () => {
+      const answer = await request(app.getHttpServer())
+        .post('/chat/query')
+        .set(headers())
+        .send({ question: 'Quando é a matrícula?' });
+      expect(answer.status).toBe(200);
+      expect(answer.body).toMatchObject({
+        conversationId: expect.any(String) as string,
+        citations: [
+          expect.objectContaining({
+            documentId,
+            filename: 'matricula.md',
+          }) as object,
+        ],
+      });
+    });
+
+    it('GET /documents lista o documento com total >= 1', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/documents')
+        .query({ page: 1, limit: 20 })
+        .set(headers());
+      expect(res.status).toBe(200);
+      const body = res.body as {
+        data: { documentId: string; filename: string }[];
+        total: number;
+      };
+      expect(body.total).toBeGreaterThanOrEqual(1);
+      expect(body.data).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ documentId, filename: 'matricula.md' }),
+        ]),
+      );
+    });
+
+    it('filename com acento sai intacto na listagem', async () => {
+      const upload = await request(app.getHttpServer())
+        .post('/documents')
+        .set(headers())
+        .attach('file', Buffer.from('Relatório das ações da escola.'), {
+          filename: 'Relatório_ação.md',
+          contentType: 'text/markdown',
+        });
+      expect(upload.status).toBe(202);
+
+      const res = await request(app.getHttpServer())
+        .get('/documents')
+        .set(headers());
+      const filenames = (res.body as { data: { filename: string }[] }).data.map(
+        (item) => item.filename,
+      );
+      expect(filenames).toContain('Relatório_ação.md');
+    });
+
+    it('DELETE /documents/:id → 204 e o status passa a 404', async () => {
+      const del = await request(app.getHttpServer())
+        .delete(`/documents/${documentId}`)
+        .set(headers());
+      expect(del.status).toBe(204);
+
+      const status = await request(app.getHttpServer())
+        .get(`/documents/${documentId}/status`)
+        .set(headers());
+      expect(status.status).toBe(404);
+    });
+
+    it('upload .exe → 400 UNSUPPORTED_DOCUMENT_TYPE', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/documents')
+        .set(headers())
+        .attach('file', Buffer.from('MZ binário'), {
+          filename: 'programa.exe',
+          contentType: 'application/octet-stream',
+        });
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ code: 'UNSUPPORTED_DOCUMENT_TYPE' });
+    });
+
+    it('arquivo acima de DOCUMENT_MAX_UPLOAD_BYTES → 413 ATTACHMENT_TOO_LARGE', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/documents')
+        .set(headers())
+        .attach('file', Buffer.alloc(MAX_UPLOAD_BYTES + 1, 'a'), {
+          filename: 'grande.txt',
+          contentType: 'text/plain',
+        });
+      expect(res.status).toBe(413);
+      expect(res.body).toMatchObject({ code: 'ATTACHMENT_TOO_LARGE' });
     });
   });
 

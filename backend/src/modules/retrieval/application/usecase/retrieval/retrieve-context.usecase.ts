@@ -11,6 +11,7 @@ export interface RetrieveContextInput {
 export interface RetrievedChunk {
   chunkId: string;
   documentId: string;
+  filename: string;
   content: string;
   score: number;
 }
@@ -42,6 +43,7 @@ export class RetrieveContextUseCase implements IUseCase {
       CitationVO.create({
         documentId: chunk.documentId,
         chunkId: chunk.chunkId,
+        filename: chunk.filename,
         excerpt: chunk.content,
       }),
     );

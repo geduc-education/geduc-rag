@@ -1,6 +1,7 @@
 export interface ChunkSearchResult {
   chunkId: string;
   documentId: string;
+  filename: string;
   content: string;
   score: number;
 }

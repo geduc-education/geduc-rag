@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { VECTOR_STORE_CLIENT } from '../../@core/infra/vector-store/vector-store.module';
-import { InMemoryVectorStoreClient } from '../../@core/infra/vector-store/in-memory-vector-store.client';
+import { VectorStoreClient } from '../../@core/infra/vector-store/vector-store.client';
 import { IEmbeddingProviderGateway } from './application/interface/gateways/embedding-provider.gateway.interface';
 import { IVectorStoreGateway } from './application/interface/gateways/vector-store.gateway.interface';
 import { EmbeddingProviderGateway } from './infra/gateways/embedding-provider.gateway';
@@ -20,8 +20,7 @@ export namespace EMBEDDING_PROVIDERS {
 
     export const VECTOR_STORE_GATEWAY = {
       provide: 'IVectorStoreGateway',
-      useFactory: (client: InMemoryVectorStoreClient) =>
-        new VectorStoreGateway(client),
+      useFactory: (client: VectorStoreClient) => new VectorStoreGateway(client),
       inject: [VECTOR_STORE_CLIENT],
     };
   }

@@ -7,6 +7,8 @@ export interface EmbedAndStoreChunkInput {
   chunkId: string;
   documentId: string;
   tenantId: string;
+  filename: string;
+  chunkIndex: number;
   content: string;
 }
 
@@ -29,13 +31,16 @@ export class EmbedAndStoreChunkUseCase implements IUseCase {
   async execute(
     input: EmbedAndStoreChunkInput,
   ): Promise<EmbedAndStoreChunkOutput> {
-    const vector = await this.embedText.execute(input.content);
+    const vector = await this.embedText.execute(input.content, 'passage');
     await this.vectorStoreGateway.upsertChunk({
       chunkId: input.chunkId,
       documentId: input.documentId,
       tenantId: input.tenantId,
+      filename: input.filename,
+      chunkIndex: input.chunkIndex,
       content: input.content,
       vector,
+      embeddingModel: this.embeddingModel,
     });
     this.logger.debug(
       `Chunk ${input.chunkId} embedado e persistido (modelo ${this.embeddingModel})`,

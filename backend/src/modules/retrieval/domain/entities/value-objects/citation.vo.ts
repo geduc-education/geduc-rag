@@ -1,6 +1,7 @@
 export interface CitationProps {
   documentId: string;
   chunkId: string;
+  filename: string;
   excerpt: string;
 }
 
@@ -12,10 +13,16 @@ export class CitationVO {
   private constructor(
     readonly documentId: string,
     readonly chunkId: string,
+    readonly filename: string,
     readonly excerpt: string,
   ) {}
 
   static create(props: CitationProps): CitationVO {
-    return new CitationVO(props.documentId, props.chunkId, props.excerpt);
+    return new CitationVO(
+      props.documentId,
+      props.chunkId,
+      props.filename,
+      props.excerpt,
+    );
   }
 }

@@ -1,39 +1,29 @@
 import { Injectable } from '@nestjs/common';
-
-export interface VectorStoreRecord {
-  chunkId: string;
-  documentId: string;
-  tenantId: string;
-  content: string;
-  vector: number[];
-}
-
-export interface VectorStoreSearchResult {
-  record: VectorStoreRecord;
-  score: number;
-}
+import {
+  VectorStoreClient,
+  VectorStoreRecord,
+  VectorStoreSearchResult,
+} from './vector-store.client';
 
 /**
- * "SDK" fake de vector store — mesmo papel de uma conexão de banco compartilhada entre
- * módulos (`DATABASE_TENANT_CONNECTION` no geduc-api): recurso de infra único, encapsulado
- * pelo gateway PRÓPRIO de cada módulo consumidor (`embedding` escreve, `retrieval` lê).
- * Nunca é referenciado fora de `infra/gateways/` desses módulos. Isolamento por tenant é
- * OBRIGATÓRIO em toda busca (ver regra em `CLAUDE.md`).
+ * Adapter in-memory do `VectorStoreClient` — usado no e2e e em dev sem banco. Busca por
+ * cosseno com varredura linear, sempre filtrada por tenant.
  */
 @Injectable()
-export class InMemoryVectorStoreClient {
+export class InMemoryVectorStoreClient implements VectorStoreClient {
   private readonly records = new Map<string, VectorStoreRecord>();
 
-  upsert(record: VectorStoreRecord): void {
+  upsert(record: VectorStoreRecord): Promise<void> {
     this.records.set(record.chunkId, record);
+    return Promise.resolve();
   }
 
   search(
     tenantId: string,
     queryVector: number[],
     topK: number,
-  ): VectorStoreSearchResult[] {
-    return [...this.records.values()]
+  ): Promise<VectorStoreSearchResult[]> {
+    const results = [...this.records.values()]
       .filter((record) => record.tenantId === tenantId)
       .map((record) => ({
         record,
@@ -41,6 +31,16 @@ export class InMemoryVectorStoreClient {
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, topK);
+    return Promise.resolve(results);
+  }
+
+  deleteByDocument(tenantId: string, documentId: string): Promise<void> {
+    for (const [chunkId, record] of this.records) {
+      if (record.tenantId === tenantId && record.documentId === documentId) {
+        this.records.delete(chunkId);
+      }
+    }
+    return Promise.resolve();
   }
 
   private cosineSimilarity(a: number[], b: number[]): number {

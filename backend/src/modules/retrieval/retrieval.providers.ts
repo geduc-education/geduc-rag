@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { VECTOR_STORE_CLIENT } from '../../@core/infra/vector-store/vector-store.module';
-import { InMemoryVectorStoreClient } from '../../@core/infra/vector-store/in-memory-vector-store.client';
+import { VectorStoreClient } from '../../@core/infra/vector-store/vector-store.client';
 import { EmbedTextUseCase } from '../embedding/application/usecase/embedding/embed-text.usecase';
 import { QueryEmbeddingGateway } from './infra/gateways/query-embedding.gateway';
 import { VectorStoreGateway } from './infra/gateways/vector-store.gateway';
@@ -20,8 +20,7 @@ export namespace RETRIEVAL_PROVIDERS {
 
     export const VECTOR_SEARCH_GATEWAY = {
       provide: 'IVectorSearchGateway',
-      useFactory: (client: InMemoryVectorStoreClient) =>
-        new VectorStoreGateway(client),
+      useFactory: (client: VectorStoreClient) => new VectorStoreGateway(client),
       inject: [VECTOR_STORE_CLIENT],
     };
   }

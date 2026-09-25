@@ -2,6 +2,8 @@ export interface EmbedChunkInput {
   chunkId: string;
   documentId: string;
   tenantId: string;
+  filename: string;
+  chunkIndex: number;
   content: string;
 }
 

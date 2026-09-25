@@ -29,15 +29,14 @@ export class IngestDocumentUseCase implements IUseCase {
     const { tenantId, documentId } = input;
     try {
       await this.documentStatusGateway.markProcessing(tenantId, documentId);
-      const { content } = await this.documentSourceGateway.getContent(
+      const { filename, content } = await this.documentSourceGateway.getContent(
         tenantId,
         documentId,
       );
       const chunks = this.chunkingService.chunk(content);
 
       const { embeddingModel, embeddingVersion } = await this.embedChunks(
-        tenantId,
-        documentId,
+        { tenantId, documentId, filename },
         chunks,
       );
 
@@ -55,16 +54,18 @@ export class IngestDocumentUseCase implements IUseCase {
   }
 
   private async embedChunks(
-    tenantId: string,
-    documentId: string,
+    source: { tenantId: string; documentId: string; filename: string },
     chunks: string[],
   ): Promise<{ embeddingModel: string; embeddingVersion: string }> {
+    const { tenantId, documentId, filename } = source;
     let lastResult = { embeddingModel: '', embeddingVersion: '' };
     for (const [index, content] of chunks.entries()) {
       lastResult = await this.embeddingIngestGateway.embedAndStore({
         chunkId: `${documentId}:${index}`,
         documentId,
         tenantId,
+        filename,
+        chunkIndex: index,
         content,
       });
     }

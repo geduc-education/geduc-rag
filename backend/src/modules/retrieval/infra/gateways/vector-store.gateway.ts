@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { VECTOR_STORE_CLIENT } from '../../../../@core/infra/vector-store/vector-store.module';
-import { InMemoryVectorStoreClient } from '../../../../@core/infra/vector-store/in-memory-vector-store.client';
+import type { VectorStoreClient } from '../../../../@core/infra/vector-store/vector-store.client';
 import {
   ChunkSearchResult,
   IVectorSearchGateway,
@@ -11,7 +11,7 @@ import {
 export class VectorStoreGateway implements IVectorSearchGateway {
   constructor(
     @Inject(VECTOR_STORE_CLIENT)
-    private readonly client: InMemoryVectorStoreClient,
+    private readonly client: VectorStoreClient,
   ) {}
 
   async searchSimilar(
@@ -19,13 +19,13 @@ export class VectorStoreGateway implements IVectorSearchGateway {
     queryVector: number[],
     topK: number,
   ): Promise<ChunkSearchResult[]> {
-    return this.client
-      .search(tenantId, queryVector, topK)
-      .map(({ record, score }) => ({
-        chunkId: record.chunkId,
-        documentId: record.documentId,
-        content: record.content,
-        score,
-      }));
+    const results = await this.client.search(tenantId, queryVector, topK);
+    return results.map(({ record, score }) => ({
+      chunkId: record.chunkId,
+      documentId: record.documentId,
+      filename: record.filename,
+      content: record.content,
+      score,
+    }));
   }
 }

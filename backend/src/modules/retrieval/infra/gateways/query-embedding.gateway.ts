@@ -7,6 +7,6 @@ export class QueryEmbeddingGateway implements IQueryEmbeddingGateway {
   constructor(private readonly embedText: EmbedTextUseCase) {}
 
   async embedQuery(text: string): Promise<number[]> {
-    return await this.embedText.execute(text);
+    return await this.embedText.execute(text, 'query');
   }
 }

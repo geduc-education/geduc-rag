@@ -21,7 +21,7 @@ function makeSut(fetchFn: jest.Mock) {
       timeoutMs: TIMEOUT_MS,
       contextWindowTokens: CONTEXT_WINDOW,
     },
-    fetchFn as unknown,
+    fetchFn as jest.MockedFunction<typeof fetch>,
   );
 }
 

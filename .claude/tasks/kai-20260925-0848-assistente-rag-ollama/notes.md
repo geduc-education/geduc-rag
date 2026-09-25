@@ -14,6 +14,9 @@
 - 2026-09-25 · plano · onda 0 — Os defaults do código continuam `mock` (embedding, LLM) para testes e CI. O `.env.example` (T-17) sugere `local`/`ollama`/`mysql`, e o dev ajusta o próprio `.env`.
 - 2026-09-25 · plano · onda 0 — A migration é gerada sem `migrate dev`, que pode propor um reset em caso de drift, via `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script > prisma/migrations/20260925000000_rag_persistence/migration.sql` (flags do Prisma 7; confira em `npx prisma migrate diff --help`), e é aplicada com `npx prisma migrate deploy`. O SQL é escrito pelo redirecionamento do shell, sem Edit/Write na pasta de migrations.
 - 2026-09-25 · plano · onda 0 — Frontend: cada tela tem o próprio `*_binds.dart`, criado como stub em T-06, para que T-15 e T-16 rodem em paralelo sem disputar `rag_assistant_module.dart`. O `RagViewState` é local ao módulo, porque o `ViewState` de `users` não é compartilhado.
+- 2026-09-25 · T-04 · onda 1 — commit a5810ad tocou backend/src/modules/documents/__tests__/upload-document.usecase.spec.ts, fora de "Arquivos prováveis"; aceito porque é só ajuste de mock exigido pela interface nova de IDocumentRepository (list/delete).
+- 2026-09-25 · T-05 · onda 1 — sugestão do revisor "spread do body depois do userId" (chat.controller.ts:49) não é bloqueante: o ValidationPipe global usa whitelist + forbidNonWhitelisted (src/main.ts:41-42), então o body não consegue carregar userId; fica como pendência de reforço defensivo.
+- 2026-09-25 · T-03 · onda 1 — EmbedTextUseCase deixou de implementar IUseCase (assinatura execute(text, kind) dá TS2416); aceito como desvio registrado.
 
 ## Bloqueios
 - O repositório não tem nenhum commit (branch `main` sem HEAD). A branch `task/assistente-rag-ollama` e o BASE da onda 1 exigem um commit inicial em `main` antes da Fase 4. Desbloqueio: o usuário autoriza o commit inicial da árvore atual (respeitando o `.gitignore`).
@@ -23,9 +26,25 @@
 - `.gitignore` não ignora `.claude/tasks/`, então os arquivos do plano entram nos commits `chore(tasks)`.
 - A descrição do `backend/package.json` diz PostgreSQL; o T-02 corrige para MySQL.
 - `EMBEDDING_PROVIDER`/`LLM_PROVIDER` existiam no env (`@IsIn(['mock'])`), mas nenhum código lia essas variáveis.
+- [T-01] Migration 20260925000000_rag_persistence aplicada e Prisma Client regenerado (de477ff): `prisma.document`, `documentChunk`, `conversation`, `conversationMessage` e enums `DocumentStatus`/`MessageRole` disponíveis em `@prisma/client`. Back-relations: `User.documents`, `User.conversations`, `Tenant.documents`, `Tenant.conversations`.
+- [T-04] `IDocumentRepository` ganhou `list(tenantId, page, limit)` e `delete(tenantId, documentId)`: todo mock `jest.Mocked<IDocumentRepository>` e toda implementação (T-08 Prisma) precisam dos dois. `DocumentProps` aceita `errorMessage?: string | null` (reidratação no T-08) além de `mimeType`/`sizeBytes`/`createdById`. `DocumentSummary`/`toDocumentSummary` em `backend/src/modules/documents/application/usecase/document/document-summary.ts`. Truncamento em `DOCUMENT_ERROR_MESSAGE_MAX_LENGTH = 500` (exportado da entidade).
+- [T-06] Pronto: `ApiClient.upload<T>(path, FormData)`, `NavGroup.assistente`, `registerRagDocumentsBinds`/`registerRagChatBinds` (stubs vazios em `presentation/{documents,chat}/*_binds.dart`), `DocumentsPage`/`ChatPage` stubs e `RagViewState` em `presentation/rag_view_state.dart`. `file_picker` e `fake_async` (dev) já estão no pubspec.lock (bd00b01).
+- [T-05] `IConversationRepository.findById(tenantId, userId, conversationId)` e `ConversationProps.userId` entregues; sem `conversationId` o use case cria conversa nova sem chamar `findById`; `ChatQueryResponseDto` já declara `citations[].filename` no Swagger, mas `MessageCitation.filename` fica para o T-10 (controller segue retornando `SendMessageOutput`).
+- [T-02] Envs novas em EnvironmentVariables (c4317a3): EMBEDDING_PROVIDER mock|local, EMBEDDING_MODEL=Xenova/multilingual-e5-small, EMBEDDING_DIMENSIONS=384 (antes 1536), EMBEDDING_QUERY_PREFIX, EMBEDDING_PASSAGE_PREFIX, EMBEDDING_CACHE_DIR?, LLM_PROVIDER mock|ollama, LLM_BASE_URL (IsUrl, default http://localhost:11434), LLM_MODEL (agora string com default qwen2.5:7b, não mais opcional), LLM_TIMEOUT_MS=120000, RAG_STORAGE mysql|memory, DOCUMENT_MAX_UPLOAD_BYTES=10485760. ERROR_CODES ganhou ATTACHMENT_TOO_LARGE, UNSUPPORTED_DOCUMENT_TYPE, DOCUMENT_TEXT_EMPTY. Versões: @huggingface/transformers 4.3.0, pdf-parse 2.4.5, mammoth 1.12.3, @types/multer 2.2.0.
+- [T-03] Contratos publicados: `VectorStoreClient` em `backend/src/@core/infra/vector-store/vector-store.client.ts` (upsert/search/deleteByDocument, todos async; `VectorStoreRecord` com filename/chunkIndex/embeddingModel); `EmbeddingKind` exportado de `embedding-provider.gateway.interface.ts`; `CitationVO` e `ChunkSearchResult`/`RetrievedChunk` ganharam `filename`. Gateways importam o client com `import type` (TS1272 com emitDecoratorMetadata).
+- [T-03] `EmbedTextUseCase` deixou de `implements IUseCase` (a assinatura `execute(text, kind)` não cabe em `execute(input?)`). O gateway mock de embedding ignora `kind`. `chat/infra/gateways/retrieval-context.gateway.ts` ainda não repassa `citation.filename` (fica para o T-10).
 
 ## Pendências
-- nenhuma
+- T-02: EMBEDDING_PROVIDER, LLM_PROVIDER e RAG_STORAGE ficaram tipados como string, e não como as uniões literais da Interface; o @IsIn garante o valor em runtime, mas quem consome (T-07/T-11/T-12) não ganha narrowing — backend/src/config/env.validation.ts:84,113,168
+- T-02: o spec não cobre rejeição de RAG_STORAGE/EMBEDDING_PROVIDER fora da lista nem de LLM_TIMEOUT_MS/DOCUMENT_MAX_UPLOAD_BYTES < 1 — backend/src/config/__tests__/env.validation.spec.ts:43-85
+- T-03: InMemoryVectorStoreClient.deleteByDocument (filtro por tenantId + documentId) sem teste; um chunk de mesmo documentId em outro tenant não pode ser removido, e isso não está coberto — backend/src/@core/infra/vector-store/in-memory-vector-store.client.ts:37
+- T-04: RED do in-memory-document.repository.spec.ts falhou por inteiro no import de document-summary, então os testes de list/delete não registraram falha individual — reports/T-04.md § RED; backend/src/modules/documents/__tests__/in-memory-document.repository.spec.ts:3
+- T-04: list não valida page/limit: page=0 dá offset negativo e slice(-limit, 0) devolve vazio em silêncio; depende do teto do PaginationQueryDto em T-14 — backend/src/modules/documents/infra/database/repositories/in-memory-document.repository.ts:39
+- T-04: DocumentProps.errorMessage?: string | null foi adicionado além da Interface (desvio declarado, aditivo, necessário para T-08 reidratar) — backend/src/modules/documents/domain/entities/document.entity.ts:19
+- T-04: contrato HTTP (GET/POST/DELETE /documents) está só em DocumentSummary, sem DTO/Swagger; conferir que T-14 documenta as rotas — backend/src/modules/documents/application/usecase/document/document-summary.ts:6
+- T-05: o filtro por usuário (404 para conversa de outro usuário) não tem teste direto; um spec do repositório em memória fecharia a lacuna — backend/src/modules/chat/infra/database/repositories/in-memory-conversation.repository.ts:18
+- T-05: spread `{ tenantId, userId, ...body }` põe o body depois do userId do JWT; hoje o ValidationPipe barra, mas fica como reforço defensivo pendente — backend/src/modules/chat/controllers/chat.controller.ts:49
+- T-06: ApiClient.upload sem teste que confirme multipart passando pelos interceptors (Authorization/tenant-id) e pelo _guard — frontend/lib/core/http/api_client.dart:143
 
 ## Riscos
 - `@huggingface/transformers` baixa binários do `onnxruntime-node` no `npm install` (T-02) e o modelo (cerca de 120 MB) na primeira inferência. Mitigação: o loader é lazy e injetável, os testes usam fake e o `EMBEDDING_CACHE_DIR` é configurável. O T-18 exige rede na primeira execução.
@@ -40,7 +59,8 @@
 - Pasta: `.claude/tasks/kai-20260925-0848-assistente-rag-ollama/`
 - Sessões: 620961c4-2eeb-49ef-98ff-082b2a5126c3
 - Branch de trabalho: task/assistente-rag-ollama (base: main)
-- BASE da onda 1: {hash7}
-- Commits por onda: {Onda N: BASE <hash7> → HEAD <hash7> (<hashes dos commits>)}
-- Último status conhecido: {resumo}
-- Próxima onda recomendada: {onda}
+- BASE da onda 1: 07b0c47
+- Commits por onda:
+  - Onda 1: BASE 07b0c47 → HEAD bdba344 (ee12040, 92976a1, 605a596, 11a8dec, de477ff, 10d3f39, a5810ad, bd00b01, c4317a3, f6b7b89, bdba344)
+- Último status conhecido: Onda 1 fechada — T-01 a T-06 concluídas ([x]), gate aprovado com todos os comandos verdes, revisões rodada 1 aprovadas sem bloqueantes.
+- Próxima onda recomendada: onda 2

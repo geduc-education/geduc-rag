@@ -2,12 +2,12 @@
 
 | ID | Camada | Descrição | Dependências | Paralelizável | Complexidade | Agente | Status |
 |---|---|---|---|---|---|---|---|
-| T-01 | database | Schema Prisma (Document, DocumentChunk, Conversation, ConversationMessage) e migration rag_persistence | — | sim | média | Darwin | [ ] |
-| T-02 | backend | Dependências, envs de providers/storage/upload e códigos de erro | — | sim | média | Levi | [ ] |
-| T-03 | backend | Contratos do pipeline: EmbeddingKind, VectorStoreClient assíncrono, filename em chunk/busca/citação | — | sim | alta | Platão | [ ] |
-| T-04 | backend | Domínio de documentos (mimeType, tamanho, falha, list/delete) e contrato HTTP de documentos | — | sim | média | Athena | [ ] |
-| T-05 | backend | Domínio do chat com conversa por usuário e contrato HTTP do chat | — | sim | média | Jaspion | [ ] |
-| T-06 | frontend | Base do módulo rag_assistant: deps, ApiClient.upload, menu, rotas protegidas e stubs | — | sim | média | Aang | [ ] |
+| T-01 | database | Schema Prisma (Document, DocumentChunk, Conversation, ConversationMessage) e migration rag_persistence | — | sim | média | Darwin | [x] |
+| T-02 | backend | Dependências, envs de providers/storage/upload e códigos de erro | — | sim | média | Levi | [x] |
+| T-03 | backend | Contratos do pipeline: EmbeddingKind, VectorStoreClient assíncrono, filename em chunk/busca/citação | — | sim | alta | Platão | [x] |
+| T-04 | backend | Domínio de documentos (mimeType, tamanho, falha, list/delete) e contrato HTTP de documentos | — | sim | média | Athena | [x] |
+| T-05 | backend | Domínio do chat com conversa por usuário e contrato HTTP do chat | — | sim | média | Jaspion | [x] |
+| T-06 | frontend | Base do módulo rag_assistant: deps, ApiClient.upload, menu, rotas protegidas e stubs | — | sim | média | Aang | [x] |
 | T-07 | backend | Vector store Prisma com BLOB Float32 e cosseno filtrado por tenant | T-01, T-02, T-03 | sim | alta | Platão | [ ] |
 | T-08 | backend | Repositório Prisma de documentos e motivo de falha na ingestão | T-01, T-02, T-03, T-04 | sim | média | Darwin | [ ] |
 | T-09 | backend | Extração de texto de .md/.txt/.pdf/.docx | T-02 | sim | média | Athena | [ ] |

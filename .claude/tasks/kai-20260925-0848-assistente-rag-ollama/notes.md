@@ -94,5 +94,6 @@
 - BASE da onda 1: 07b0c47
 - Commits por onda:
   - Onda 1: BASE 07b0c47 → HEAD bdba344 (ee12040, 92976a1, 605a596, 11a8dec, de477ff, 10d3f39, a5810ad, bd00b01, c4317a3, f6b7b89, bdba344)
-- Último status conhecido: Onda 1 fechada — T-01 a T-06 concluídas ([x]), gate aprovado com todos os comandos verdes, revisões rodada 1 aprovadas sem bloqueantes.
-- Próxima onda recomendada: onda 2
+  - Onda 2: BASE d5ccdf4 → HEAD 7fc140b (58f2e1e, 8e6cf99, 91df24f, 603e8cf, a7cbd47, dc43f0e, 39db4ef, d747195, c2d3e8f, be6d211, 711afe6, b58f222, 2dc6f62, 97d750f, 7fc140b)
+- Último status conhecido: Onda 2 fechada — T-07 a T-13 concluídas ([x]), gate aprovado (jest 170/170, e2e 7/7, tsc/eslint/build exit 0, flutter test 29/29, analyze limpo), revisões rodada 1 aprovadas sem bloqueantes; critério de smoke (T-18) não se aplica à onda 2.
+- Próxima onda recomendada: onda 3

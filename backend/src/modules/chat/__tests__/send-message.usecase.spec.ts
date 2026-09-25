@@ -4,6 +4,9 @@ import { IRetrievalContextGateway } from '../application/interface/gateways/retr
 import { IAnswerGenerationGateway } from '../application/interface/gateways/answer-generation.gateway.interface';
 import { ConversationEntity } from '../domain/entities/conversation.entity';
 import NotFound from '../../../@core/shared/exceptions/400/not-found-error';
+import { RetrievalContextGateway } from '../infra/gateways/retrieval-context.gateway';
+import { RetrieveContextUseCase } from '../../retrieval/application/usecase/retrieval/retrieve-context.usecase';
+import { CitationVO } from '../../retrieval/domain/entities/value-objects/citation.vo';
 
 function makeRepository(): jest.Mocked<IConversationRepository> {
   return { findById: jest.fn().mockResolvedValue(null), save: jest.fn() };
@@ -108,6 +111,45 @@ describe('SendMessageUseCase', () => {
         role: 'user',
         content: 'Primeira pergunta',
       });
+    });
+  });
+
+  describe('quando o retrieval devolve citações com filename', () => {
+    it('a resposta traz citations[0].filename vindo do RetrievalContextGateway', async () => {
+      const retrieveContext = {
+        execute: jest.fn().mockResolvedValue({
+          chunks: [
+            {
+              chunkId: 'chunk-1',
+              documentId: 'doc-1',
+              filename: 'manual.pdf',
+              content: 'trecho',
+              score: 0.9,
+            },
+          ],
+          citations: [
+            CitationVO.create({
+              documentId: 'doc-1',
+              chunkId: 'chunk-1',
+              filename: 'manual.pdf',
+              excerpt: 'trecho',
+            }),
+          ],
+        }),
+      } as unknown as RetrieveContextUseCase;
+      sut = new SendMessageUseCase(
+        repository,
+        new RetrievalContextGateway(retrieveContext),
+        answerGateway,
+      );
+
+      const result = await sut.execute({
+        tenantId: 'tenant-1',
+        userId: 'user-1',
+        question: 'Qual o prazo?',
+      });
+
+      expect(result.citations[0]).toHaveProperty('filename', 'manual.pdf');
     });
   });
 

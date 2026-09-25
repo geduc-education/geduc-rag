@@ -1,3 +1,4 @@
+import NotFound from '../../../@core/shared/exceptions/400/not-found-error';
 import { IngestDocumentUseCase } from '../application/usecase/ingestion/ingest-document.usecase';
 import { ChunkingService } from '../application/services/chunking.service';
 import { IDocumentSourceGateway } from '../application/interface/gateways/document-source.gateway.interface';
@@ -96,8 +97,47 @@ describe('IngestDocumentUseCase', () => {
       expect(documentStatusGateway.markFailed).toHaveBeenCalledWith(
         'tenant-1',
         'doc-1',
+        'não encontrado',
       );
       expect(embeddingIngestGateway.embedAndStore).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('quando o embedding falha', () => {
+    beforeEach(() => {
+      documentSourceGateway.getContent.mockResolvedValue({
+        filename: 'a.txt',
+        content: '0123456789',
+      });
+      embeddingIngestGateway.embedAndStore.mockRejectedValue(
+        new Error('Ollama indisponível'),
+      );
+    });
+
+    it('marca failed com a mensagem do erro como reason', async () => {
+      await expect(
+        sut.execute({ tenantId: 'tenant-1', documentId: 'doc-1' }),
+      ).rejects.toThrow('Ollama indisponível');
+      expect(documentStatusGateway.markFailed).toHaveBeenCalledWith(
+        'tenant-1',
+        'doc-1',
+        'Ollama indisponível',
+      );
+      expect(documentStatusGateway.markReady).not.toHaveBeenCalled();
+    });
+
+    it('documento excluído durante processing: rejeita com o erro original do embedding', async () => {
+      documentStatusGateway.markFailed.mockRejectedValue(
+        new NotFound('Documento não encontrado.'),
+      );
+
+      const execution = sut.execute({
+        tenantId: 'tenant-1',
+        documentId: 'doc-1',
+      });
+
+      await expect(execution).rejects.toThrow('Ollama indisponível');
+      await expect(execution).rejects.not.toBeInstanceOf(NotFound);
     });
   });
 });

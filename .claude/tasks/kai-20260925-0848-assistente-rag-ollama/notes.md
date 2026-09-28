@@ -25,6 +25,7 @@
 - 2026-09-25 · T-14 · onda 3 — 413 via interceptor no controller porque o `FileInterceptor` não deixa o `MulterError` chegar ao filtro global: aceito.
 - 2026-09-25 · T-15 · onda 3 — sugestão "troca de tenant ignorada com a página Documentos aberta" não promovida a bloqueante (sem vazamento: usuário tem acesso aos dois tenants; delete nesse estado dá 404); segue como pendência para a revisão final, junto com timer órfão em corrida e resposta de página obsoleta.
 - 2026-09-25 · T-16 · onda 3 — construtor `ChatController(repo, {TenantContext? tenants})` e contador de geração para descartar resposta em voo: aceitos (fix rodada 1, commit 4c5bb29). Pendência: singleton sobrevivendo a logout/login de outro usuário, a confirmar na revisão final.
+- 2026-09-28 · T-17 · onda 4 — smoke `backend/scripts/smoke-rag.sh` segue o ruling da Onda 2 (só no gate da Onda 5); a ausência de execução nesta onda não conta como pendência.
 
 ## Bloqueios
 - O repositório não tem nenhum commit (branch `main` sem HEAD). A branch `task/assistente-rag-ollama` e o BASE da onda 1 exigem um commit inicial em `main` antes da Fase 4. Desbloqueio: o usuário autoriza o commit inicial da árvore atual (respeitando o `.gitignore`).
@@ -98,6 +99,10 @@
 - T-16: o singleton da conversa pode sobreviver a logout e login de outro usuário no mesmo navegador; confirmar o descarte ou limpar a conversa quando `activeTenantId` virar `null` — frontend/lib/modules/auth/services/session_service.dart:76-79
 - T-16: sem widget test de `ChatPage`, `ChatBubble` ou `CitationCard` — frontend/test/rag_assistant/
 - T-16: o teste de erro não verifica que a bolha do usuário fica na lista nem que nenhuma bolha do assistente é criada — frontend/test/rag_assistant/chat_controller_test.dart:115-128
+- T-17: a linha do `DELETE /documents/:id` atribui a remoção dos chunks ao `onDelete: Cascade`, e não a `vectorsGateway.deleteByDocument` antes de `repository.delete` (delete-document.usecase.ts:26-27); o cascade não existe com `RAG_STORAGE=memory` — .docs/rag-assistant-feature.md:46
+- T-17: o doc da feature não cita as permissões exigidas (`DOCUMENT_MANAGE`, `DOCUMENT_READ`, `CHAT_QUERY`) nem o `permissionGuard` das rotas `/home/rag/{documents,chat}`; confunde o grupo do menu (`NavGroup.assistente`) com o registro de rotas — .docs/rag-assistant-feature.md:36-37,83
+- T-17: "DI por `Bind`/`Module`" não bate com o padrão do projeto (`ModularContext` + `addLazySingleton`) — .docs/rag-assistant-feature.md:55
+- T-17: o comentário do `EMBEDDING_PROVIDER=local` remete a `.docs/ollama-setup.md`, mas o guia não cobre download de embeddings nem `EMBEDDING_CACHE_DIR` — backend/.env.example:46
 
 ## Riscos
 - `@huggingface/transformers` baixa binários do `onnxruntime-node` no `npm install` (T-02) e o modelo (cerca de 120 MB) na primeira inferência. Mitigação: o loader é lazy e injetável, os testes usam fake e o `EMBEDDING_CACHE_DIR` é configurável. O T-18 exige rede na primeira execução.
@@ -117,5 +122,6 @@
   - Onda 1: BASE 07b0c47 → HEAD bdba344 (ee12040, 92976a1, 605a596, 11a8dec, de477ff, 10d3f39, a5810ad, bd00b01, c4317a3, f6b7b89, bdba344)
   - Onda 2: BASE d5ccdf4 → HEAD 7fc140b (58f2e1e, 8e6cf99, 91df24f, 603e8cf, a7cbd47, dc43f0e, 39db4ef, d747195, c2d3e8f, be6d211, 711afe6, b58f222, 2dc6f62, 97d750f, 7fc140b)
   - Onda 3: BASE 287b76c → HEAD 4c5bb29 (dafd783, a0740e8, 11fe8b5, a448b3c, 9da3a98, 314864e, 4c5bb29)
-- Último status conhecido: Onda 3 fechada — T-14, T-15 e T-16 concluídas ([x]); gate aprovado; T-14 e T-15 aprovadas na rodada 1 com sugestões; T-16 reprovada na rodada 1 (bloqueante: reset por troca de tenant só com a ChatPage montada), corrigida (commit 4c5bb29) e aprovada na re-validação e na rodada 2; validação cruzada pós-correção com árvore parada: tsc/eslint exit 0, jest 175/175, e2e 13/13, flutter analyze limpo, flutter test 44/44.
-- Próxima onda recomendada: onda 4
+  - Onda 4: BASE 152e1fa → HEAD ec32108 (0a26f6d, 838cdda, 9f34b4f, ec32108)
+- Último status conhecido: Onda 4 fechada — T-14 concluída ([x] onda 3, já registrado). T-17 concluída ([x]); gate aprovado; revisão rodada 1 reprovou (bloqueante: prefixos e5 sem aspas em backend/.env.example perdiam o espaço final no dotenv), corrigida pelo implementador original e aprovada na re-validação e na rodada 2; validação cruzada pós-correção com árvore parada: tsc/eslint exit 0, jest 175/175, e2e 13/13, flutter analyze limpo, flutter test 44/44.
+- Próxima onda recomendada: onda 5 — T-18

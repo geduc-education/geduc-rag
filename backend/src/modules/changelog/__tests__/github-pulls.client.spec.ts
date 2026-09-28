@@ -42,9 +42,12 @@ async function captureError(
   throw new Error('esperava rejeição');
 }
 
-function requestHeaders(fetchFn: jest.Mock): Headers {
-  const init = fetchFn.mock.calls[0][1] as RequestInit;
-  return new Headers(init.headers);
+function fetchCall(fetchFn: jest.Mock, index = 0): [string, RequestInit] {
+  return fetchFn.mock.calls[index] as [string, RequestInit];
+}
+
+function requestHeaders(fetchFn: jest.Mock, index = 0): Headers {
+  return new Headers(fetchCall(fetchFn, index)[1].headers);
 }
 
 const mergedPull = {
@@ -67,8 +70,8 @@ describe('GithubPullsClient', () => {
     await makeSut(fetchFn).listMergedPulls(REPO);
 
     expect(fetchFn).toHaveBeenCalledTimes(1);
-    expect(fetchFn.mock.calls[0][0]).toBe(EXPECTED_URL);
-    const init = fetchFn.mock.calls[0][1] as RequestInit;
+    const [url, init] = fetchCall(fetchFn);
+    expect(url).toBe(EXPECTED_URL);
     expect(init.signal).toBeInstanceOf(AbortSignal);
     const headers = requestHeaders(fetchFn);
     expect(headers.get('Accept')).toBe('application/vnd.github+json');
@@ -81,7 +84,7 @@ describe('GithubPullsClient', () => {
 
     await makeSut(fetchFn, { baseBranch: 'release/1.0' }).listMergedPulls(REPO);
 
-    expect(fetchFn.mock.calls[0][0]).toContain('base=release%2F1.0&');
+    expect(fetchCall(fetchFn)[0]).toContain('base=release%2F1.0&');
   });
 
   it('envia Authorization Bearer quando há token', async () => {
@@ -95,16 +98,15 @@ describe('GithubPullsClient', () => {
   });
 
   it('não envia Authorization sem token ou com token vazio', async () => {
-    const fetchFn = jest.fn().mockResolvedValue(jsonResponse(200, []));
+    const fetchFn = jest
+      .fn()
+      .mockImplementation(() => Promise.resolve(jsonResponse(200, [])));
 
     await makeSut(fetchFn).listMergedPulls(REPO);
     await makeSut(fetchFn, { token: '' }).listMergedPulls(REPO);
 
     expect(requestHeaders(fetchFn).has('Authorization')).toBe(false);
-    const second = new Headers(
-      (fetchFn.mock.calls[1][1] as RequestInit).headers,
-    );
-    expect(second.has('Authorization')).toBe(false);
+    expect(requestHeaders(fetchFn, 1).has('Authorization')).toBe(false);
   });
 
   it('devolve só os PRs mergeados, com url vinda de html_url', async () => {

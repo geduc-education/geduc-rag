@@ -8,6 +8,7 @@ import { AllExceptionsFilter } from '../src/common/filters';
 import { buildValidationException } from '../src/common/pipes';
 import { PERMISSIONS } from '../src/common/rbac/permissions';
 import { PrismaService } from '../src/database/prisma.service';
+import { GithubPullsClient } from '../src/modules/changelog/github-pulls.client';
 
 const TENANT = '7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11';
 const OTHER_TENANT = '9e1c1b63-3e1b-4b7c-8b6f-3c2e0b2d4f22';
@@ -48,11 +49,14 @@ const prismaStub = {
 describe('App (e2e, Prisma stubado)', () => {
   let app: INestApplication<App>;
   let token: string;
+  const githubClient = { listMergedPulls: jest.fn() };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
       .useValue(prismaStub)
+      .overrideProvider(GithubPullsClient)
+      .useValue(githubClient)
       .compile();
     app = moduleRef.createNestApplication();
     app.useGlobalPipes(
@@ -238,6 +242,37 @@ describe('App (e2e, Prisma stubado)', () => {
         });
       expect(res.status).toBe(413);
       expect(res.body).toMatchObject({ code: 'ATTACHMENT_TOO_LARGE' });
+    });
+  });
+
+  describe('changelog', () => {
+    it('GET /changelog sem token → 401', async () => {
+      const res = await request(app.getHttpServer()).get('/changelog');
+      expect(res.status).toBe(401);
+    });
+
+    it('GET /changelog com token e GITHUB_REPO vazio → 200 não configurado', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/changelog')
+        .set(auth());
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({
+        configured: false,
+        repository: null,
+        items: [],
+        fetchedAt: null,
+        stale: false,
+      });
+      expect(githubClient.listMergedPulls).not.toHaveBeenCalled();
+    });
+
+    it('GET /changelog?limit=0 → 400', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/changelog')
+        .query({ limit: 0 })
+        .set(auth());
+      expect(res.status).toBe(400);
+      expect(githubClient.listMergedPulls).not.toHaveBeenCalled();
     });
   });
 

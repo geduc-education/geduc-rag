@@ -7,3 +7,6 @@ process.env.LOG_LEVEL = 'error';
 process.env.RAG_STORAGE = 'memory';
 process.env.EMBEDDING_PROVIDER = 'mock';
 process.env.LLM_PROVIDER = 'mock';
+// Novidades desligadas no e2e: o `process.env` vence o `.env` local, então
+// nenhum teste chama o GitHub (o client também é sobrescrito no spec).
+process.env.GITHUB_REPO = '';

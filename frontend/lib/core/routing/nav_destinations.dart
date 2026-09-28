@@ -71,6 +71,12 @@ const List<NavDestination> navDestinations = <NavDestination>[
     description: 'Perguntas com citações',
     group: NavGroup.assistente,
   ),
+  NavDestination(
+    label: 'Novidades',
+    icon: Icons.campaign_outlined,
+    route: '/home/changelog',
+    description: 'Atualizações do produto',
+  ),
 ];
 
 /// Rótulo de exibição da seção [group] na sidebar.

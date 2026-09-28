@@ -67,6 +67,29 @@ ollama pull qwen2.5:7b                          # baixa o modelo
 Passo a passo completo (systemd, GPU, teste da API, observações de
 hardware) em [`.docs/ollama-setup.md`](.docs/ollama-setup.md).
 
+### Smoke ponta a ponta
+
+`backend/scripts/smoke-rag.sh` (requer `curl` e `jq`) prova o assistente
+contra os serviços reais: faz login, sobe `backend/scripts/fixtures/smoke-doc.md`
+via multipart, espera o status `ready` (timeout de 180 s), pergunta em
+`POST /chat/query` algo que só o documento responde e exclui o documento no
+final. Com o backend em `LLM_PROVIDER=ollama`, `EMBEDDING_PROVIDER=local` e
+`RAG_STORAGE=mysql`:
+
+```bash
+API_URL=http://localhost:3000 SMOKE_EMAIL=<email> SMOKE_PASSWORD=<senha> \
+SMOKE_TENANT_ID=<tenant-id> bash backend/scripts/smoke-rag.sh; echo "exit=$?"
+```
+
+O usuário precisa de `document:manage` e `chat:query` e de vínculo com o
+tenant. O script não lê o `.env`. No sucesso, imprime a resposta e
+`SMOKE PASS filename=smoke-doc.md` (exit 0); em falha, imprime
+`SMOKE FAIL: <etapa>` (`config`, `login`, `upload`, `status`, `chat` ou
+`delete`) com o HTTP e a mensagem da API (exit 1). Um exemplo é o Ollama
+parado, que resulta em `SMOKE FAIL: chat` com o 502 `Ollama indisponível`.
+Na primeira execução, a ingestão baixa o modelo de embedding, o que exige
+rede. Opcionais: `SMOKE_TIMEOUT_S`, `SMOKE_CHAT_TIMEOUT_S` e `SMOKE_QUESTION`.
+
 ## Testes
 
 ```bash

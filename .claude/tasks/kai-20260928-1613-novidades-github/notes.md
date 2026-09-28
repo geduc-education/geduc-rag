@@ -15,12 +15,14 @@
 - 2026-09-28 · T-04 · onda 2 — Payload "não configurado" montado localmente no service (T-02 não exporta a constante) e `import type` no DTO por TS1272 — desvios aceitos.
 - 2026-09-28 · T-05 · onda 3 — RED inválido rejeitado: commit RED 91a81e0 também tocou `backend/test/setup-e2e.ts`, fora das crases do bloco Teste RED; aceito porque o arquivo está em "Arquivos prováveis", a Interface descreve a mudança (`GITHUB_REPO=''`) e ela é necessária para o RED rodar.
 - 2026-09-28 · T-08 · onda 4 — `url_launcher` adicionado com aprovação do usuário; página e tile sem teste de widget pela limitação do GoogleFonts em flutter test (mesma do T-11, já registrada em notes.md) — aceito.
+- 2026-09-28 · T-11 · onda 5 — `sem teste` por plano (GoogleFonts faz rethrow sem rede em flutter test; projeto sem testWidgets) — sem commit RED, aceito.
 
 ## Bloqueios
 - nenhum
 
 ## Descobertas
 - `registerChangelogBinds`/`registerChangelogRoutes` registrados em home_module.dart; `ChangelogController` é lazy singleton do shell (T-11 usa `inject<ChangelogController>()`); `ChangelogTypeBadge`, `changelogTypeIcons` e `changelogTypeShortLabels` em `frontend/lib/modules/changelog/presentation/widgets/changelog_type_badge.dart`; `ChangelogEntryTile` em `widgets/changelog_entry_tile.dart`. Commits 076d9b1 (RED), 883dbd1.
+- `ChangelogRecentCard` criado em `frontend/lib/modules/changelog/presentation/widgets/changelog_recent_card.dart` e usado em `DashboardPage` (texto "O assistente de conhecimento chega..." removido). Commit 109f649.
 
 ## Pendências
 - T-01: `GITHUB_BASE_BRANCH=` vazio passa em `@IsString()` sem `@MinLength(1)` nem default para `''` — backend/src/config/env.validation.ts:195
@@ -59,5 +61,6 @@
   - Onda 2: BASE cf56286 → HEAD f4f08fa (bbb8756, b996f9c, 052f03f, ec8287c, f4f08fa)
   - Onda 3: BASE 99f1a22 → HEAD 0de5dbb (91a81e0, 1d14ef5, 8328221, 0de5dbb)
   - Onda 4: BASE 3e91188 → HEAD 883dbd1 (076d9b1, 883dbd1, 3061bb6)
-- Último status conhecido: Onda 4 concluída — T-08, T-09 [x], gate aprovado (flutter test 64/64, analyze limpo, build web ok, navigation test prova "Novidades" sem permissão, README com as 5 envs e sem token), RED de T-08 válido, revisões rodada 1 aprovadas com sugestões, sem bloqueantes.
-- Próxima onda recomendada: Onda 5 — T-11 (depende de T-08, já concluída; não paralelizável)
+  - Onda 5: BASE ff2b9ea → HEAD 109f649 (109f649)
+- Último status conhecido: Onda 5 concluída — T-11 [x], gate aprovado (12 comandos verdes: flutter analyze, flutter test 64/64, build web, backend tsc/eslint/jest 220/220/e2e 16/16, greps do card), sem teste por plano (GoogleFonts), revisão rodada 1 aprovada sem bloqueantes.
+- Próxima onda recomendada: Onda 6 — T-10 (depende de T-08, T-09, T-11, todas concluídas; não paralelizável)

@@ -12,3 +12,4 @@ cat >> "/home/kaine/source/geduc-rag/.claude/tasks/kai-20260928-1613-novidades-g
 EOF
 ```
 - [T-08] `registerChangelogBinds`/`registerChangelogRoutes` registrados em home_module.dart; `ChangelogController` é lazy singleton do shell (T-11 usa `inject<ChangelogController>()`); `ChangelogTypeBadge`, `changelogTypeIcons` e `changelogTypeShortLabels` em `frontend/lib/modules/changelog/presentation/widgets/changelog_type_badge.dart`; `ChangelogEntryTile` em `widgets/changelog_entry_tile.dart`. Commits 076d9b1 (RED), 883dbd1.
+- [T-11] `ChangelogRecentCard` criado em `frontend/lib/modules/changelog/presentation/widgets/changelog_recent_card.dart` e usado em `DashboardPage` (texto "O assistente de conhecimento chega..." removido). Commit 109f649.

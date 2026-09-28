@@ -6,9 +6,9 @@
 | T-02 | backend | Contrato do changelog (tipos + payload) e parser de título Conventional Commits | — | sim | média | Platão | [x] |
 | T-03 | backend | `GithubPullsClient`: PRs mergeados via REST, timeout e erros tipados sem vazar token | — | sim | média | Naruto | [x] |
 | T-04 | backend | `ChangelogService`: não configurado, cache TTL, stale e 502 + DTOs de resposta | T-01, T-02, T-03 | sim | alta | Saitama | [x] |
-| T-05 | backend | `GET /changelog`: controller, query DTO, módulo, registro no AppModule e e2e | T-04 | sim | média | Aang | [ ] |
+| T-05 | backend | `GET /changelog`: controller, query DTO, módulo, registro no AppModule e e2e | T-04 | sim | média | Aang | [x] |
 | T-06 | frontend | Models `ChangelogFeed`/`ChangelogEntry`, repository e fake de teste | T-02 | sim | simples | Arquimedes | [x] |
-| T-07 | frontend | `ChangelogController`: estados, agrupamento, recentes e cache de sessão | T-06 | sim | média | Spock | [ ] |
+| T-07 | frontend | `ChangelogController`: estados, agrupamento, recentes e cache de sessão | T-06 | sim | média | Spock | [x] |
 | T-08 | frontend | Página Novidades, módulo, rota `/home/changelog`, item de menu, selo de tipo e `url_launcher` | T-07 | sim | média | Tesla | [ ] |
 | T-09 | docs | README e `backend/CLAUDE.md`: configuração do GitHub e módulo `changelog` | T-01, T-05 | sim | simples | Gandalf | [ ] |
 | T-11 | frontend | Card "Novidades recentes" na tela de início | T-08 | não | média | Athena | [ ] |

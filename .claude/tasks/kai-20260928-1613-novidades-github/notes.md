@@ -13,6 +13,7 @@
 - 2026-09-28 · plano · onda 1 — Execução na branch atual `task/assistente-rag-ollama`, sem criar `task/novidades-github` (decisão do usuário); `repos.py --preparar` recusou com "branch de trabalho não declarada no plano", ignorado por ruling já que o passo só cria/retoma branch e o checkout já estava na branch pedida.
 - 2026-09-28 · T-02 · onda 1 — Trailer `Task: T-02 (RED)` do commit a1aa4b6 ficou em parágrafo separado do corpo; o validador confirmou que o grep o identifica como RED (mensagem completa, não só trailers) — aceito sem reescrever histórico.
 - 2026-09-28 · T-04 · onda 2 — Payload "não configurado" montado localmente no service (T-02 não exporta a constante) e `import type` no DTO por TS1272 — desvios aceitos.
+- 2026-09-28 · T-05 · onda 3 — RED inválido rejeitado: commit RED 91a81e0 também tocou `backend/test/setup-e2e.ts`, fora das crases do bloco Teste RED; aceito porque o arquivo está em "Arquivos prováveis", a Interface descreve a mudança (`GITHUB_REPO=''`) e ela é necessária para o RED rodar.
 
 ## Bloqueios
 - nenhum
@@ -31,6 +32,10 @@
 - T-04: `logger.warn` real polui a saída do spec nos casos de erro; considerar `jest.spyOn(Logger.prototype, 'warn')` — backend/src/modules/changelog/changelog.service.ts:104
 - T-06: `ChangelogRepository.fetch` não tem teste (path e `queryParameters` só conferidos por leitura) — frontend/lib/modules/changelog/data/changelog_repository.dart:16-20
 - T-06: `number` ausente no JSON vira `0` silenciosamente e `url` vira `''`; considerar descartar o item em `tryFromJson` — frontend/lib/modules/changelog/data/models/changelog_entry.dart:47-48
+- T-05: o e2e só cobre `limit=0`; `limit=101`, `limit=abc` e o default 50 repassado ao service não têm caso — backend/test/app.e2e-spec.ts:270
+- T-05: o `@ApiResponse` 502 não referencia o schema de erro padrão e não há `@ApiResponse` 400/401 documentados — backend/src/modules/changelog/changelog.controller.ts:20
+- T-07: `load()` concorrente não tem teste de identidade de `Future` (`identical(c.load(), c.load())`), só `fake.calls.length == 1` — frontend/test/changelog/changelog_controller_test.dart:129
+- T-07: `_fetch()` não limpa `_error` ao entrar em `loading`; UI de T-08/T-11 deve decidir pelo `state`, nunca por `error != null` — frontend/lib/modules/changelog/presentation/changelog_controller.dart:66
 
 ## Riscos
 - A árvore tem alterações não commitadas do plano anterior (`.claude/tasks/kai-20260925-0848-assistente-rag-ollama/board.md`, `reports/T-18.md`): os agentes commitam só os próprios caminhos e não as tocam.
@@ -47,5 +52,6 @@
 - Commits por onda:
   - Onda 1: BASE 87b7179 → HEAD 61ce830 (a1aa4b6, c844b1a, 8429e72, 492a2aa, 7cd32bb, 8e3a7e1, 82fb1d5, b43ec17, 61ce830)
   - Onda 2: BASE cf56286 → HEAD f4f08fa (bbb8756, b996f9c, 052f03f, ec8287c, f4f08fa)
-- Último status conhecido: Onda 2 concluída — T-04, T-06 [x], gate aprovado (backend jest 220/220, eslint/tsc ok; frontend flutter test 48/48, analyze limpo), revisões rodada 1 sem bloqueantes.
-- Próxima onda recomendada: Onda 3 — T-05 (depende de T-04, já concluída)
+  - Onda 3: BASE 99f1a22 → HEAD 0de5dbb (91a81e0, 1d14ef5, 8328221, 0de5dbb)
+- Último status conhecido: Onda 3 concluída — T-05, T-07 [x], gate aprovado (npm test, test:e2e 16/16, tsc, eslint, flutter analyze, flutter test), revisões rodada 1 aprovadas com sugestões, sem bloqueantes.
+- Próxima onda recomendada: Onda 4 — T-08, T-09 (dependem de T-05/T-07, já concluídas)

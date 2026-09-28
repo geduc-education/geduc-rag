@@ -39,5 +39,6 @@
 - Branch de trabalho: task/assistente-rag-ollama (base: task/assistente-rag-ollama)
 - BASE da onda 1: 87b7179
 - Commits por onda:
+  - Onda 1: BASE 87b7179 → HEAD 61ce830 (a1aa4b6, c844b1a, 8429e72, 492a2aa, 7cd32bb, 8e3a7e1, 82fb1d5, b43ec17, 61ce830)
 - Último status conhecido: Onda 1 concluída — T-01, T-02, T-03 [x], gate aprovado (jest backend 204/204, tsc/eslint ok), revisões rodada 1 sem bloqueantes.
 - Próxima onda recomendada: Onda 2 — T-04, T-05, T-06 (T-06 depende só de T-02, já concluída)

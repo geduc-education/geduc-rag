@@ -12,7 +12,7 @@
 | T-08 | frontend | Página Novidades, módulo, rota `/home/changelog`, item de menu, selo de tipo e `url_launcher` | T-07 | sim | média | Tesla | [x] |
 | T-09 | docs | README e `backend/CLAUDE.md`: configuração do GitHub e módulo `changelog` | T-01, T-05 | sim | simples | Gandalf | [x] |
 | T-11 | frontend | Card "Novidades recentes" na tela de início | T-08 | não | média | Athena | [x] |
-| T-10 | qa | Validação integral backend + frontend na branch | T-08, T-09, T-11 | não | simples | Sherlock | [ ] |
+| T-10 | qa | Validação integral backend + frontend na branch | T-08, T-09, T-11 | não | simples | Sherlock | [x] |
 
 ## Detalhamento
 

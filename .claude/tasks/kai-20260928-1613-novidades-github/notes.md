@@ -16,6 +16,7 @@
 - 2026-09-28 · T-05 · onda 3 — RED inválido rejeitado: commit RED 91a81e0 também tocou `backend/test/setup-e2e.ts`, fora das crases do bloco Teste RED; aceito porque o arquivo está em "Arquivos prováveis", a Interface descreve a mudança (`GITHUB_REPO=''`) e ela é necessária para o RED rodar.
 - 2026-09-28 · T-08 · onda 4 — `url_launcher` adicionado com aprovação do usuário; página e tile sem teste de widget pela limitação do GoogleFonts em flutter test (mesma do T-11, já registrada em notes.md) — aceito.
 - 2026-09-28 · T-11 · onda 5 — `sem teste` por plano (GoogleFonts faz rethrow sem rede em flutter test; projeto sem testWidgets) — sem commit RED, aceito.
+- 2026-09-28 · T-10 · onda 6 — QA read-only aprovada por validação cruzada final: backend jest 220/220, e2e 16/16, tsc/eslint exit 0, flutter analyze limpo, flutter test 64/64, sem diff em backend/prisma; revisão rodada 1 sem achados.
 
 ## Bloqueios
 - nenhum
@@ -62,5 +63,6 @@
   - Onda 3: BASE 99f1a22 → HEAD 0de5dbb (91a81e0, 1d14ef5, 8328221, 0de5dbb)
   - Onda 4: BASE 3e91188 → HEAD 883dbd1 (076d9b1, 883dbd1, 3061bb6)
   - Onda 5: BASE ff2b9ea → HEAD 109f649 (109f649)
-- Último status conhecido: Onda 5 concluída — T-11 [x], gate aprovado (12 comandos verdes: flutter analyze, flutter test 64/64, build web, backend tsc/eslint/jest 220/220/e2e 16/16, greps do card), sem teste por plano (GoogleFonts), revisão rodada 1 aprovada sem bloqueantes.
-- Próxima onda recomendada: Onda 6 — T-10 (depende de T-08, T-09, T-11, todas concluídas; não paralelizável)
+  - Onda 6: BASE e6cb01e → HEAD e6cb01e (sem código novo, task read-only)
+- Último status conhecido: Onda 6 concluída — T-10 [x], QA read-only aprovada por validação cruzada final (backend jest 220/220, e2e 16/16, tsc/eslint exit 0, flutter analyze limpo, flutter test 64/64, sem diff em backend/prisma), revisão rodada 1 sem achados. Todas as tasks do plano concluídas.
+- Próxima onda recomendada: nenhuma — plano concluído; próximo passo é a revisão final da branch.

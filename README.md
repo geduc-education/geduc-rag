@@ -90,6 +90,26 @@ parado, que resulta em `SMOKE FAIL: chat` com o 502 `Ollama indisponível`.
 Na primeira execução, a ingestão baixa o modelo de embedding, o que exige
 rede. Opcionais: `SMOKE_TIMEOUT_S`, `SMOKE_CHAT_TIMEOUT_S` e `SMOKE_QUESTION`.
 
+### Novidades (GitHub)
+
+A tela "Novidades" lista os PRs mergeados no GitHub como changelog do
+produto (`GET /changelog`). Envs em `backend/.env`:
+
+| Env | Obrigatória | Default | Descrição |
+|---|---|---|---|
+| `GITHUB_REPO` | não | — | `owner/nome` do repositório. Sem ela, a rota responde 200 com `configured: false` (feed vazio, sem chamar o GitHub). |
+| `GITHUB_TOKEN` | não | — | Token do GitHub (`Authorization`). Sem token, o rate limit da API pública é 60 req/h por IP; use um token para aumentar o limite. |
+| `GITHUB_BASE_BRANCH` | não | `main` | Branch alvo dos PRs listados (`base=<branch>`). |
+| `GITHUB_TIMEOUT_MS` | não | `5000` | Timeout da chamada ao GitHub. |
+| `CHANGELOG_CACHE_TTL_SECONDS` | não | `600` | TTL do cache em memória do feed; chamadas simultâneas compartilham a mesma busca. |
+
+Só entram no feed PRs cujo título segue Conventional Commits com tipo
+`feat`, `fix` ou `refactor` (escopo entre parênteses e `!` de breaking
+change são opcionais, ex. `feat(changelog)!: ...`); outros títulos são
+ignorados. Se o GitHub falhar (timeout, rede, 401/403/404, rate limit) e não
+houver cache, a rota responde 502 `CHANGELOG_SOURCE_UNAVAILABLE`; havendo
+cache, ele é servido com `stale: true`.
+
 ## Testes
 
 ```bash
@@ -105,6 +125,7 @@ cd frontend && fvm flutter analyze && fvm flutter test
 | `users` | cadastro com perfis e tenants (1º módulo) | ✅ back + front |
 | `profiles` / `tenants` | apoio ao cadastro de usuários (API) | ✅ API · tela pendente |
 | `documents` · `ingestion` · `embedding` · `retrieval` · `generation` · `chat` | pipeline RAG (herdado do rag-api) | ✅ back + front · MySQL, embedding local e Ollama |
+| `changelog` | feed de novidades a partir de PRs mergeados no GitHub | ✅ back + front |
 
 Detalhes e próximos passos em `.docs/prd/modulo-users.md`,
 `.docs/rag-architecture.md` e `.docs/rag-assistant-feature.md`.

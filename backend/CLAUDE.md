@@ -6,7 +6,7 @@ NestJS 11 + TypeScript + Prisma 7 + MySQL.
 
 | Família | Módulos | Padrão |
 |---|---|---|
-| **Plataforma** | `auth`, `users`, `profiles`, `tenants` | geduc-suporte: Controller → Service → PrismaService |
+| **Plataforma** | `auth`, `users`, `profiles`, `tenants`, `changelog` | geduc-suporte: Controller → Service → PrismaService |
 | **RAG** | `documents`, `ingestion`, `embedding`, `retrieval`, `generation`, `chat` | rag-api: Clean Architecture (use cases + gateways) — ver `.docs/rag-architecture.md` |
 
 Não misture: módulo de plataforma não ganha use case/gateway; módulo RAG não

@@ -22,6 +22,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
+import { ChangelogModule } from './modules/changelog/changelog.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { IngestionModule } from './modules/ingestion/ingestion.module';
 import { EmbeddingModule } from './modules/embedding/embedding.module';
@@ -32,7 +33,7 @@ import { ChatModule } from './modules/chat/chat.module';
 /**
  * Módulo raiz. Duas famílias de módulo convivem (ver CLAUDE.md):
  *
- * - **Plataforma** (auth, users, profiles, tenants) — padrão geduc-suporte:
+ * - **Plataforma** (auth, users, profiles, tenants, changelog) — padrão geduc-suporte:
  *   Controller → Service → PrismaService.
  * - **RAG** (documents, ingestion, embedding, retrieval, generation, chat) —
  *   Clean Architecture herdada do rag-api: use cases puros + gateways, com a
@@ -75,6 +76,7 @@ import { ChatModule } from './modules/chat/chat.module';
     UsersModule,
     ProfilesModule,
     TenantsModule,
+    ChangelogModule,
     // RAG — write path (assíncrono) e read path
     DocumentsModule,
     IngestionModule,

@@ -67,6 +67,10 @@ export const ERROR_CODES = {
   UNSUPPORTED_DOCUMENT_TYPE: 'UNSUPPORTED_DOCUMENT_TYPE',
   /** Documento sem texto extraível (ex.: PDF escaneado). 400. */
   DOCUMENT_TEXT_EMPTY: 'DOCUMENT_TEXT_EMPTY',
+
+  // --- Changelog ----------------------------------------------------------
+  /** GitHub indisponível (falha, timeout ou limite) e sem cache para servir. 502. */
+  CHANGELOG_SOURCE_UNAVAILABLE: 'CHANGELOG_SOURCE_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

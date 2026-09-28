@@ -171,6 +171,40 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(1)
   DOCUMENT_MAX_UPLOAD_BYTES: number = 10485760;
+
+  // --- Changelog (GitHub) -------------------------------------------------
+  // Repositório `owner/nome` de onde vêm os PRs mergeados. Vazio = tela de
+  // novidades não configurada (o `.env` costuma trazer `GITHUB_REPO=`).
+  @Transform(({ value }: { value: unknown }) =>
+    value === '' ? undefined : value,
+  )
+  @IsOptional()
+  @Matches(/^[\w.-]+\/[\w.-]+$/, {
+    message: 'GITHUB_REPO deve estar no formato owner/nome',
+  })
+  GITHUB_REPO?: string;
+
+  // Token opcional (repositório privado ou limite de requisições maior).
+  @Transform(({ value }: { value: unknown }) =>
+    value === '' ? undefined : value,
+  )
+  @IsOptional()
+  @IsString()
+  GITHUB_TOKEN?: string;
+
+  @IsString()
+  GITHUB_BASE_BRANCH: string = 'main';
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  GITHUB_TIMEOUT_MS: number = 5000;
+
+  // TTL do cache em memória da lista de PRs; 0 = sem cache.
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  CHANGELOG_CACHE_TTL_SECONDS: number = 600;
 }
 
 /**

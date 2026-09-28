@@ -46,6 +46,6 @@
 - BASE da onda 1: 87b7179
 - Commits por onda:
   - Onda 1: BASE 87b7179 → HEAD 61ce830 (a1aa4b6, c844b1a, 8429e72, 492a2aa, 7cd32bb, 8e3a7e1, 82fb1d5, b43ec17, 61ce830)
-  - Onda 2: BASE cf56286 → HEAD <preencher no passo 7> (bbb8756, b996f9c, 052f03f, ec8287c)
+  - Onda 2: BASE cf56286 → HEAD f4f08fa (bbb8756, b996f9c, 052f03f, ec8287c, f4f08fa)
 - Último status conhecido: Onda 2 concluída — T-04, T-06 [x], gate aprovado (backend jest 220/220, eslint/tsc ok; frontend flutter test 48/48, analyze limpo), revisões rodada 1 sem bloqueantes.
 - Próxima onda recomendada: Onda 3 — T-05 (depende de T-04, já concluída)

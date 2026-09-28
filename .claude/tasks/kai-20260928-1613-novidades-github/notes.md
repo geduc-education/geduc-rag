@@ -58,5 +58,6 @@
   - Onda 1: BASE 87b7179 → HEAD 61ce830 (a1aa4b6, c844b1a, 8429e72, 492a2aa, 7cd32bb, 8e3a7e1, 82fb1d5, b43ec17, 61ce830)
   - Onda 2: BASE cf56286 → HEAD f4f08fa (bbb8756, b996f9c, 052f03f, ec8287c, f4f08fa)
   - Onda 3: BASE 99f1a22 → HEAD 0de5dbb (91a81e0, 1d14ef5, 8328221, 0de5dbb)
+  - Onda 4: BASE 3e91188 → HEAD 883dbd1 (076d9b1, 883dbd1, 3061bb6)
 - Último status conhecido: Onda 4 concluída — T-08, T-09 [x], gate aprovado (flutter test 64/64, analyze limpo, build web ok, navigation test prova "Novidades" sem permissão, README com as 5 envs e sem token), RED de T-08 válido, revisões rodada 1 aprovadas com sugestões, sem bloqueantes.
 - Próxima onda recomendada: Onda 5 — T-11 (depende de T-08, já concluída; não paralelizável)

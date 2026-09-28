@@ -83,4 +83,42 @@ describe('validateEnv', () => {
       /LLM_BASE_URL/,
     );
   });
+  it('aplica os defaults do changelog (GitHub) sem as envs', () => {
+    const config = validateEnv({ ...BASE });
+    expect(config.GITHUB_BASE_BRANCH).toBe('main');
+    expect(config.GITHUB_TIMEOUT_MS).toBe(5000);
+    expect(config.CHANGELOG_CACHE_TTL_SECONDS).toBe(600);
+    expect(config.GITHUB_REPO).toBeUndefined();
+    expect(config.GITHUB_TOKEN).toBeUndefined();
+  });
+
+  it('trata GITHUB_REPO e GITHUB_TOKEN vazios como não configurados', () => {
+    const config = validateEnv({ ...BASE, GITHUB_REPO: '', GITHUB_TOKEN: '' });
+    expect(config.GITHUB_REPO).toBeUndefined();
+    expect(config.GITHUB_TOKEN).toBeUndefined();
+  });
+
+  it('aceita GITHUB_REPO no formato owner/nome e converte os números', () => {
+    const config = validateEnv({
+      ...BASE,
+      GITHUB_REPO: 'genesis-tech/geduc-rag',
+      GITHUB_TIMEOUT_MS: '3000',
+      CHANGELOG_CACHE_TTL_SECONDS: '0',
+    });
+    expect(config.GITHUB_REPO).toBe('genesis-tech/geduc-rag');
+    expect(config.GITHUB_TIMEOUT_MS).toBe(3000);
+    expect(config.CHANGELOG_CACHE_TTL_SECONDS).toBe(0);
+  });
+
+  it('rejeita GITHUB_REPO sem barra', () => {
+    expect(() => validateEnv({ ...BASE, GITHUB_REPO: 'sem-barra' })).toThrow(
+      /GITHUB_REPO/,
+    );
+  });
+
+  it('rejeita CHANGELOG_CACHE_TTL_SECONDS negativo', () => {
+    expect(() =>
+      validateEnv({ ...BASE, CHANGELOG_CACHE_TTL_SECONDS: '-1' }),
+    ).toThrow(/CHANGELOG_CACHE_TTL_SECONDS/);
+  });
 });

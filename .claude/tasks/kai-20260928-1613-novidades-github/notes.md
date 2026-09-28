@@ -14,12 +14,13 @@
 - 2026-09-28 · T-02 · onda 1 — Trailer `Task: T-02 (RED)` do commit a1aa4b6 ficou em parágrafo separado do corpo; o validador confirmou que o grep o identifica como RED (mensagem completa, não só trailers) — aceito sem reescrever histórico.
 - 2026-09-28 · T-04 · onda 2 — Payload "não configurado" montado localmente no service (T-02 não exporta a constante) e `import type` no DTO por TS1272 — desvios aceitos.
 - 2026-09-28 · T-05 · onda 3 — RED inválido rejeitado: commit RED 91a81e0 também tocou `backend/test/setup-e2e.ts`, fora das crases do bloco Teste RED; aceito porque o arquivo está em "Arquivos prováveis", a Interface descreve a mudança (`GITHUB_REPO=''`) e ela é necessária para o RED rodar.
+- 2026-09-28 · T-08 · onda 4 — `url_launcher` adicionado com aprovação do usuário; página e tile sem teste de widget pela limitação do GoogleFonts em flutter test (mesma do T-11, já registrada em notes.md) — aceito.
 
 ## Bloqueios
 - nenhum
 
 ## Descobertas
-- nenhuma até o planejamento
+- `registerChangelogBinds`/`registerChangelogRoutes` registrados em home_module.dart; `ChangelogController` é lazy singleton do shell (T-11 usa `inject<ChangelogController>()`); `ChangelogTypeBadge`, `changelogTypeIcons` e `changelogTypeShortLabels` em `frontend/lib/modules/changelog/presentation/widgets/changelog_type_badge.dart`; `ChangelogEntryTile` em `widgets/changelog_entry_tile.dart`. Commits 076d9b1 (RED), 883dbd1.
 
 ## Pendências
 - T-01: `GITHUB_BASE_BRANCH=` vazio passa em `@IsString()` sem `@MinLength(1)` nem default para `''` — backend/src/config/env.validation.ts:195
@@ -36,6 +37,10 @@
 - T-05: o `@ApiResponse` 502 não referencia o schema de erro padrão e não há `@ApiResponse` 400/401 documentados — backend/src/modules/changelog/changelog.controller.ts:20
 - T-07: `load()` concorrente não tem teste de identidade de `Future` (`identical(c.load(), c.load())`), só `fake.calls.length == 1` — frontend/test/changelog/changelog_controller_test.dart:129
 - T-07: `_fetch()` não limpa `_error` ao entrar em `loading`; UI de T-08/T-11 deve decidir pelo `state`, nunca por `error != null` — frontend/lib/modules/changelog/presentation/changelog_controller.dart:66
+- T-08: em `_openPr`, `Clipboard.setData` fica fora do `try`: falha de escrita no clipboard na web escapa sem tratamento e o toast não aparece — frontend/lib/modules/changelog/presentation/widgets/changelog_entry_tile.dart:31
+- T-08: fallback abrir/copiar sem teste automatizado; extrair a decisão para função com `launchUrl` injetável permitiria testá-la sem `testWidgets`/GoogleFonts — frontend/lib/modules/changelog/presentation/widgets/changelog_entry_tile.dart:20
+- T-08: `Tooltip` envolve o selo também com `compact: false`, quando o rótulo já está visível; o contrato só pede tooltip no modo compacto — frontend/lib/modules/changelog/presentation/widgets/changelog_type_badge.dart:58
+- T-09: README documenta `GET /changelog` mas não o parâmetro `limit` (1..100, default 50) — README.md:96
 
 ## Riscos
 - A árvore tem alterações não commitadas do plano anterior (`.claude/tasks/kai-20260925-0848-assistente-rag-ollama/board.md`, `reports/T-18.md`): os agentes commitam só os próprios caminhos e não as tocam.
@@ -53,5 +58,5 @@
   - Onda 1: BASE 87b7179 → HEAD 61ce830 (a1aa4b6, c844b1a, 8429e72, 492a2aa, 7cd32bb, 8e3a7e1, 82fb1d5, b43ec17, 61ce830)
   - Onda 2: BASE cf56286 → HEAD f4f08fa (bbb8756, b996f9c, 052f03f, ec8287c, f4f08fa)
   - Onda 3: BASE 99f1a22 → HEAD 0de5dbb (91a81e0, 1d14ef5, 8328221, 0de5dbb)
-- Último status conhecido: Onda 3 concluída — T-05, T-07 [x], gate aprovado (npm test, test:e2e 16/16, tsc, eslint, flutter analyze, flutter test), revisões rodada 1 aprovadas com sugestões, sem bloqueantes.
-- Próxima onda recomendada: Onda 4 — T-08, T-09 (dependem de T-05/T-07, já concluídas)
+- Último status conhecido: Onda 4 concluída — T-08, T-09 [x], gate aprovado (flutter test 64/64, analyze limpo, build web ok, navigation test prova "Novidades" sem permissão, README com as 5 envs e sem token), RED de T-08 válido, revisões rodada 1 aprovadas com sugestões, sem bloqueantes.
+- Próxima onda recomendada: Onda 5 — T-11 (depende de T-08, já concluída; não paralelizável)

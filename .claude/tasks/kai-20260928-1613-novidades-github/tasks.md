@@ -9,8 +9,8 @@
 | T-05 | backend | `GET /changelog`: controller, query DTO, módulo, registro no AppModule e e2e | T-04 | sim | média | Aang | [x] |
 | T-06 | frontend | Models `ChangelogFeed`/`ChangelogEntry`, repository e fake de teste | T-02 | sim | simples | Arquimedes | [x] |
 | T-07 | frontend | `ChangelogController`: estados, agrupamento, recentes e cache de sessão | T-06 | sim | média | Spock | [x] |
-| T-08 | frontend | Página Novidades, módulo, rota `/home/changelog`, item de menu, selo de tipo e `url_launcher` | T-07 | sim | média | Tesla | [ ] |
-| T-09 | docs | README e `backend/CLAUDE.md`: configuração do GitHub e módulo `changelog` | T-01, T-05 | sim | simples | Gandalf | [ ] |
+| T-08 | frontend | Página Novidades, módulo, rota `/home/changelog`, item de menu, selo de tipo e `url_launcher` | T-07 | sim | média | Tesla | [x] |
+| T-09 | docs | README e `backend/CLAUDE.md`: configuração do GitHub e módulo `changelog` | T-01, T-05 | sim | simples | Gandalf | [x] |
 | T-11 | frontend | Card "Novidades recentes" na tela de início | T-08 | não | média | Athena | [ ] |
 | T-10 | qa | Validação integral backend + frontend na branch | T-08, T-09, T-11 | não | simples | Sherlock | [ ] |
 

@@ -8,7 +8,7 @@ import '../../../core/theme/app_dimensions.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/colors_app.dart';
 import '../../../shared/components/buttons/app_primary_button.dart';
-import '../../../shared/components/feedback/app_error_banner.dart';
+import '../../../shared/components/feedback/app_toast.dart';
 import '../../../shared/components/forms/app_text_field.dart';
 import '../../../shared/utils/validators.dart';
 import 'login_controller.dart';
@@ -64,7 +64,12 @@ class _LoginPageState extends State<LoginPage> {
       _emailController.text,
       _passwordController.text,
     );
-    if (user == null || !mounted) return;
+    if (!mounted) return;
+    if (user == null) {
+      final error = _controller.error;
+      if (error != null) showAppToast(context, error, type: AppToastType.error);
+      return;
+    }
     _routeAfterLogin(user);
   }
 
@@ -89,8 +94,6 @@ class _LoginPageState extends State<LoginPage> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                AppErrorBanner(message: _controller.error),
-                if (_controller.error != null) AppDimensions.vGapLg,
                 AppTextField(
                   label: 'E-mail',
                   controller: _emailController,

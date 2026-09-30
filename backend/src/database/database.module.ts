@@ -6,15 +6,13 @@ import {
   buildPoolOptions,
   MysqlAdapter,
 } from '../@core/infra/adapters/mysql.adapter';
-import { PrismaService } from './prisma.service';
 
-/** Teto conservador do pool por instância (mesmo default do PrismaService). */
+/** Teto conservador do pool de conexões por instância. */
 const DEFAULT_DB_POOL_MAX = 10;
 
 @Global()
 @Module({
   providers: [
-    PrismaService,
     {
       provide: DATABASE_CONNECTION,
       inject: [ConfigService],
@@ -29,6 +27,6 @@ const DEFAULT_DB_POOL_MAX = 10;
         ),
     },
   ],
-  exports: [PrismaService, DATABASE_CONNECTION],
+  exports: [DATABASE_CONNECTION],
 })
 export class DatabaseModule {}

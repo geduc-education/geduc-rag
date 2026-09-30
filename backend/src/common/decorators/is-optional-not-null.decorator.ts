@@ -3,7 +3,7 @@ import { ValidateIf } from 'class-validator';
 /**
  * Campo OPCIONAL cuja coluna é NOT NULL no banco: ausente (`undefined`) é
  * aceito, mas `null` explícito é validado — e reprovado pelos validadores do
- * campo (400) em vez de chegar ao Prisma e virar 500.
+ * campo (400) em vez de chegar ao banco e virar 500.
  *
  * Contraste com `@IsOptional()`, que pula a validação para `undefined` E para
  * `null`. Nos DTOs deste projeto a distinção é o contrato de "limpar campo" via

@@ -34,7 +34,7 @@ import { ChatModule } from './modules/chat/chat.module';
  * Módulo raiz. Duas famílias de módulo convivem (ver CLAUDE.md):
  *
  * - **Plataforma** (auth, users, profiles, tenants, changelog) — padrão geduc-suporte:
- *   Controller → Service → PrismaService.
+ *   Controller → Service → repositórios SQL (`DATABASE_CONNECTION`).
  * - **RAG** (documents, ingestion, embedding, retrieval, generation, chat) —
  *   Clean Architecture herdada do rag-api: use cases puros + gateways, com a
  *   infra `@core` (vector store e fila) ainda in-memory.

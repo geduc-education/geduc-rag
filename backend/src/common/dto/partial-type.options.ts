@@ -4,7 +4,7 @@
  * Por padrão o `PartialType` marca cada campo herdado com um `@IsOptional()`
  * implícito, e `@IsOptional()` pula a validação para `undefined` **e** para
  * `null`. Sem `skipNullProperties: false`, um PATCH com `{ "name": null }`
- * atravessa o `ValidationPipe` intacto, o service repassa o `null` ao Prisma e
+ * atravessa o `ValidationPipe` intacto, o service repassa o `null` ao banco e
  * a coluna NOT NULL estoura em **500** — quando a resposta correta para um
  * payload inválido é **400**.
  *

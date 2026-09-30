@@ -16,7 +16,6 @@ import {
   ITenantAccessRepository,
   UserTenantLinks,
 } from '../src/common/tenancy/application/interface/repository/tenant-access.repository.interface';
-import { PrismaService } from '../src/database/prisma.service';
 import { GithubPullsClient } from '../src/modules/changelog/github-pulls.client';
 
 const TENANT = '7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11';
@@ -58,21 +57,13 @@ const databaseStub = {
   runInTransaction: rejectDatabase,
 };
 
-/** PrismaService até a remoção do Prisma: só o ciclo de vida do módulo. */
-const prismaStub = {
-  $connect: () => Promise.resolve(),
-  $disconnect: () => Promise.resolve(),
-};
-
-describe('App (e2e, Prisma stubado)', () => {
+describe('App (e2e, banco stubado)', () => {
   let app: INestApplication<App>;
   let token: string;
   const githubClient = { listMergedPulls: jest.fn() };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideProvider(PrismaService)
-      .useValue(prismaStub)
       .overrideProvider(DATABASE_CONNECTION)
       .useValue(databaseStub)
       .overrideProvider('IEffectivePermissionsRepository')

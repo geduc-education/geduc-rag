@@ -4,11 +4,11 @@
 |---|---|---|---|---|---|---|---|
 | T-01 | infra | Porta `IDatabaseConnection`, `MysqlAdapter` (mysql2), guarda de mutação e `DatabaseModule` com `DATABASE_CONNECTION` convivendo com o Prisma | — | sim | alta | Platão | [x] |
 | T-02 | infra | Query builder mínimo (`:named` → `?`, filtros, SELECT paginado com allow-list) e `isMysqlDuplicateEntry` | — | sim | média | Arquimedes | [x] |
-| T-03 | database | Runner de migration (`schema_migrations` + checksum), baseline 0001/0002 e `npm run db:migrate` | T-01 | sim | alta | Spock | [ ] |
-| T-04 | backend | `DocumentRepository` em SQL e wiring em `documents.providers.ts` | T-01, T-02 | sim | média | Darwin | [ ] |
-| T-05 | backend | `ConversationRepository` em SQL (upsert + mensagens em lote na transação) e wiring em `chat.providers.ts` | T-01 | sim | média | Aang | [ ] |
-| T-06 | backend | `MysqlVectorStoreClient` e wiring em `vector-store.module.ts` | T-01 | sim | média | Saitama | [ ] |
-| T-07 | backend | Repositórios de RBAC e tenancy; `EffectivePermissionsService` e `TenantAccessService` sem Prisma; e2e sobrescreve os repositórios | T-01 | sim | alta | Jaspion | [ ] |
+| T-03 | database | Runner de migration (`schema_migrations` + checksum), baseline 0001/0002 e `npm run db:migrate` | T-01 | sim | alta | Spock | [x] |
+| T-04 | backend | `DocumentRepository` em SQL e wiring em `documents.providers.ts` | T-01, T-02 | sim | média | Darwin | [x] |
+| T-05 | backend | `ConversationRepository` em SQL (upsert + mensagens em lote na transação) e wiring em `chat.providers.ts` | T-01 | sim | média | Aang | [x] |
+| T-06 | backend | `MysqlVectorStoreClient` e wiring em `vector-store.module.ts` | T-01 | sim | média | Saitama | [x] |
+| T-07 | backend | Repositórios de RBAC e tenancy; `EffectivePermissionsService` e `TenantAccessService` sem Prisma; e2e sobrescreve os repositórios | T-01 | sim | alta | Jaspion | [x] |
 | T-08 | backend | `IProfileRepository` + `ProfilesService` sem Prisma | T-01 | sim | simples | Levi | [ ] |
 | T-09 | backend | `ITenantRepository` + `TenantsService` sem Prisma; `tenantWhere()` removido | T-01, T-02, T-07 | sim | média | Yoda | [ ] |
 | T-10 | backend | `IUserRepository` (agregado em lote por `IN`, vínculos N:N) e `users.mapper.ts` | T-01, T-02, T-07 | sim | alta | Goku | [ ] |

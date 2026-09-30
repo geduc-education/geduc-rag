@@ -17,6 +17,9 @@
 - 2026-09-30 · plano · onda 0 — `key` e `system` são palavras reservadas do MySQL 8: todo SQL as escreve com crase.
 - 2026-09-30 · T-01 · onda 1 — Erro prettier em mysql.adapter.ts:137 apontado pelo hook check-complexity foi corrigido durante a onda (instrução do orquestrador, sem fix loop).
 - 2026-09-30 · T-02 · onda 1 — DuplicateEntryException não portada (a Interface da task não pedia); só isMysqlDuplicateEntry.
+- 2026-09-30 · T-07 · onda 2 — Erros prettier/no-unnecessary-type-assertion apontados pelo hook check-complexity foram repassados ao implementador e corrigidos antes do commit (sem fix loop).
+- 2026-09-30 · T-04 · onda 2 — Desvio aceito: `list` roda página e count em `Promise.all` fora de transação.
+- 2026-09-30 · T-06 · onda 2 — Upsert com `VALUES(col)` (deprecado no MySQL 8) aceito; validar no banco real em T-17.
 
 ## Bloqueios
 - nenhum
@@ -27,6 +30,10 @@
 - `users.policy.spec.ts` e `tenant.guard.spec.ts` não usam Prisma; `users.policy.spec.ts` só muda por causa de `userScopeWhere`.
 - O `IDocumentRepository.list` e o `UsersService.list` já devolvem `{ data, total }`.
 - [T-01] DATABASE_CONNECTION/IDatabaseConnection prontos (714a370). ensureSafeWhere também recusa `/*` e qualquer `#`/`--` no SQL inteiro e exige operador depois do primeiro WHERE; update/delete só servem para UPDATE/DELETE com WHERE, e `INSERT … ON DUPLICATE KEY UPDATE` vai por insert.
+- [T-04] `DocumentRepository` (SQL) substitui `PrismaDocumentRepository`; `src/modules/documents` não referencia mais Prisma (a7e549a).
+- [T-03] Runner pronto (f51d627, aff7581): migrations 0001/0002 idênticas ao Prisma (cmp), CLI `backend/database/migrate.ts`, script `db:migrate`; `MigrationConnection.query` devolve linhas.
+- [T-05] `ConversationRepository` em SQL substitui o Prisma; `src/modules/chat` não referencia mais `PrismaService` (85f844b).
+- [T-07] `buildEffectivePermissions(grants: UserGrants)`, `scopeOf`/`TenantScope` e tokens `'IEffectivePermissionsRepository'`/`'ITenantAccessRepository'` prontos; o e2e sobrescreve `DATABASE_CONNECTION` com stub que rejeita chamadas, então repositório novo no e2e precisa de override próprio; interfaces injetadas via `@Inject` exigem `import type` (TS1272).
 
 ## Pendências
 - Proposta para o usuário aplicar em `.claude/settings.json` (não editado pelo plano): remover da allowlist `Bash(npx prisma generate)`, `Bash(npx prisma validate)` e `Bash(npx prisma migrate diff *)`. Se quiser, acrescentar `Bash(npm run db:migrate)` (aplica schema, avalie antes de liberar).
@@ -39,6 +46,20 @@
 - T-02: toPositional casa `:letra` dentro de literal SQL e lança "Parâmetro ausente"; documentar no README (sql-params.ts:15).
 - T-02: caso de teste diz "undefined/null" mas só testa null; `{ x: undefined }` é aceito e o mysql2 o trata diferente de null (query-builder.spec.ts:28).
 - Critérios cruzados de grep prisma, SHOW CREATE TABLE e npm ci dependem de ondas posteriores.
+- T-03: fake de `_prisma_migrations` ignora o WHERE (`finished_at IS NOT NULL AND rolled_back_at IS NULL`); faltam caso de migration revertida/inacabada e caso "baseline só com `schema_migrations` vazia" (migration-runner.ts:98).
+- T-03: falha no meio de uma migration (DDL não transacional) deixa nada registrado; documentar a recuperação manual no cabeçalho da CLI (migration-runner.ts:138).
+- T-03: a CLI usa `timezone: 'Z'` sem `SET time_zone = '+00:00'`; `applied_at` sai na hora do servidor (migrate.ts:38).
+- T-03: `tsconfig.build.json` não exclui `database/`; tratar em T-14 (a decisão de onda 0 troca `prisma` por `database` no `exclude`).
+- T-04: wiring de `'IDocumentRepository'` sem spec próprio (documents.providers.ts:31-41).
+- T-04: `list` com página e COUNT fora de transação pode divergir sob escrita concorrente (document.repository.ts:97-103).
+- T-05: teste "devolve null…" usa `calls.every(...)`, que passa vazio; asserir também `calls.length > 0` (conversation.repository.spec.ts:193).
+- T-05: checagem de posse lança `Error` genérico; considerar erro de domínio tipado (conversation.repository.ts:132).
+- T-05: `ORDER BY m.created_at ASC` sem desempate por id (preexistente) (conversation.repository.ts:47).
+- T-06: `VALUES(col)` no upsert é deprecado no MySQL 8.0.20+; validar no banco real em T-17 (mysql-vector-store.client.ts:23-31).
+- T-06: factory de `VECTOR_STORE_CLIENT` sem teste unitário (vector-store.module.ts:21-31).
+- T-07: `scopeOf` sem teste; só é exercitado a partir de T-09/T-10 (tenant-access.service.ts:22).
+- T-07: "ignora tenant excluído" provado só por `toContain('t.deleted_at IS NULL')`; verificar no MySQL real em T-17 (tenant-access.repository.spec.ts:64).
+- Validador (onda 2): `import { Prisma }` e `tenantWhere` restantes em tenant-access.service.ts:2,64 são permitidos até T-09; grep prisma global, npm ci, SHOW CREATE TABLE e `db:migrate` contra banco real dependem de T-08…T-17.
 
 ## Riscos
 - Datas deslocadas por fuso: a mitigação é UTC fixo no pool e o caso de teste em T-01, e T-17 compara um `createdAt` real antes e depois.
@@ -54,5 +75,6 @@
 - BASE da onda 1: 481715e
 - Commits por onda:
   - Onda 1: BASE 481715e → HEAD 714a370 (3dfaea6, c1686b8, 48e23ac, 714a370)
-- Último status conhecido: onda 1 concluída (T-01 e T-02 [x]); validador e revisão sem bloqueantes.
-- Próxima onda recomendada: onda 2 (T-03, T-04 e demais com dependências T-01/T-02 satisfeitas, conforme plan.md)
+  - Onda 2: BASE 1a413ea → HEAD 1a1f7ce (f51d627, 64dff80, 6d2b876, 6686dbe, 9748701, aff7581, a7e549a, ad3c0c3, 85f844b, 1a1f7ce)
+- Último status conhecido: onda 2 concluída (T-03 a T-07 [x]); validador e revisão sem bloqueantes.
+- Próxima onda recomendada: onda 3 (tasks pendentes com dependências satisfeitas, conforme plan.md: T-08, T-09, T-10, T-11…)

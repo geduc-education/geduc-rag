@@ -11,6 +11,11 @@ function fakeConnection(opts: {
   return { db, query, queryOne };
 }
 
+/** SQL e params da n-ésima chamada do mock. */
+function callOf(mock: jest.Mock, index = 0): [string, unknown[]] {
+  return mock.mock.calls[index] as [string, unknown[]];
+}
+
 describe('TenantAccessRepository', () => {
   describe('findActiveUserTenants', () => {
     it('converte is_super_admin 0/1 em boolean e lista os tenants', async () => {
@@ -50,14 +55,14 @@ describe('TenantAccessRepository', () => {
       });
       await new TenantAccessRepository(db).findActiveUserTenants('u1');
 
-      const userSql = String(queryOne.mock.calls[0][0]);
+      const userSql = callOf(queryOne)[0];
       expect(userSql).toContain('u.active = ?');
       expect(userSql).toContain('u.deleted_at IS NULL');
-      expect(queryOne.mock.calls[0][1]).toEqual(['u1', 1]);
+      expect(callOf(queryOne)[1]).toEqual(['u1', 1]);
 
-      const linkSql = String(query.mock.calls[0][0]);
+      const linkSql = callOf(query)[0];
       expect(linkSql).toContain('t.deleted_at IS NULL');
-      expect(query.mock.calls[0][1]).toEqual(['u1']);
+      expect(callOf(query)[1]).toEqual(['u1']);
     });
   });
 
@@ -75,10 +80,10 @@ describe('TenantAccessRepository', () => {
         new TenantAccessRepository(db).isTenantActive('t1'),
       ).resolves.toBe(true);
 
-      const sql = String(queryOne.mock.calls[0][0]);
+      const sql = callOf(queryOne)[0];
       expect(sql).toContain('active = ?');
       expect(sql).toContain('deleted_at IS NULL');
-      expect(queryOne.mock.calls[0][1]).toEqual(['t1', 1]);
+      expect(callOf(queryOne)[1]).toEqual(['t1', 1]);
     });
   });
 });

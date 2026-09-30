@@ -17,8 +17,13 @@ function fakeConnection(opts: {
 /** SQL de todas as chamadas, na ordem. */
 function sqlOf(...mocks: jest.Mock[]): string {
   return mocks
-    .flatMap((mock) => mock.mock.calls.map((call) => String(call[0])))
+    .flatMap((mock) => mock.mock.calls.map((_, i) => callOf(mock, i)[0]))
     .join('\n');
+}
+
+/** SQL e params da n-ésima chamada do mock. */
+function callOf(mock: jest.Mock, index = 0): [string, unknown[]] {
+  return mock.mock.calls[index] as [string, unknown[]];
 }
 
 describe('EffectivePermissionsRepository', () => {
@@ -67,7 +72,7 @@ describe('EffectivePermissionsRepository', () => {
     expect(sql).toContain('p.deleted_at IS NULL');
     expect(sql).toContain('`key`');
     expect(sql).not.toMatch(/[^`]\bkey\b[^`]/);
-    expect(queryOne.mock.calls[0][1]).toEqual(['u1', 1]);
-    expect(query.mock.calls[0][1]).toEqual(['u1', 1]);
+    expect(callOf(queryOne)[1]).toEqual(['u1', 1]);
+    expect(callOf(query)[1]).toEqual(['u1', 1]);
   });
 });

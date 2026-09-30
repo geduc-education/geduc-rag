@@ -3,10 +3,10 @@ import { buildEffectivePermissions } from '../../common/rbac/effective-permissio
 import { UserResponseDto } from './dto/user-response.dto';
 
 /**
- * Seleção segura de User para respostas — NUNCA inclui passwordHash. É um
- * superset do `EFFECTIVE_PERMISSIONS_SELECT` (mesmo filtro de perfil ativo),
- * então o payload alimenta direto o `buildEffectivePermissions`: `/auth/me`,
- * respostas de usuário e o guard nunca divergem.
+ * Seleção segura de User para respostas — NUNCA inclui passwordHash. Usa o
+ * mesmo filtro de perfil ativo do `IEffectivePermissionsRepository`, e as
+ * chaves passam pelo `buildEffectivePermissions`: `/auth/me`, respostas de
+ * usuário e o guard nunca divergem.
  */
 export const USER_SELECT = {
   id: true,
@@ -57,7 +57,12 @@ export function toUserResponse(user: UserWithRelations): UserResponseDto {
       name: profile.name,
     })),
     tenants: user.tenants.map(({ tenant }) => tenant),
-    permissions: buildEffectivePermissions(user).toSortedKeys(),
+    permissions: buildEffectivePermissions({
+      isSuperAdmin: user.isSuperAdmin,
+      permissionKeys: user.profiles.flatMap(({ profile }) =>
+        profile.permissions.map(({ permission }) => permission.key),
+      ),
+    }).toSortedKeys(),
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,

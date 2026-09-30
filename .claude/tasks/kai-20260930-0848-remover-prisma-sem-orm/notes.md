@@ -24,6 +24,9 @@
 - 2026-09-30 · T-10 · onda 3 — Desvios aceitos: `p.active = 1` literal nas queries em lote; `replaceTenants` grava `updated_by_id` em `user` (`user_tenant` não tem a coluna).
 - 2026-09-30 · T-11 · onda 3 — Desvios aceitos: SELECT id após upsert, transação na regravação de perfis e na criação do SUPERADMIN, 4º caso de teste.
 - 2026-09-30 · T-10 · onda 3 — Lint transitório do RED (user.repository.spec.ts, TS2307) acusado pelo hook check-complexity, resolvido pela implementação, sem ação.
+- 2026-09-30 · T-12 · onda 4 — Desvios aceitos: `buildAuthResponse` lança UnauthorizedException quando `findById` devolve null; correção de lint do spec entrou no commit de implementação.
+- 2026-09-30 · T-13 · onda 4 — Desvio aceito: `create` relê o usuário via `users.findById`.
+- 2026-09-30 · T-12, T-13 · onda 4 — `não rodado: npm ci` aceito como adiado para T-17 (dona da validação de npm ci limpo), para não alterar node_modules no meio da migração.
 
 ## Bloqueios
 - nenhum
@@ -42,6 +45,8 @@
 - [T-11] `runSeed` em `backend/src/database/seed/run-seed.ts` e CLI `backend/database/seed.ts` prontos (905610e RED, 5b660dd); T-14 deve apontar `db:seed` (e remover o bloco `"prisma": { "seed" }`) para `ts-node database/seed.ts`. `prisma/seed.ts` continua intacto até T-14.
 - [T-09] `TENANT_REPOSITORY = 'ITenantRepository'`/`ITenantRepository` prontos e exportados por `TenantsModule` (interface em `modules/tenants/application/interface/repository/tenant.repository.interface.ts`; `countExisting([])` → 0 sem SQL). `tenantWhere()` e o import de Prisma saíram de `tenant-access.service.ts`. `TenantsModule` não é global: quem consumir `TENANT_REPOSITORY` (ex.: users) precisa importar `TenantsModule`.
 - [T-10] `USER_REPOSITORY = 'IUserRepository'` pronto e exportado pelo `UsersModule` (0fc23ce RED, 2403a80); tipos em `users/application/interface/repository/user.repository.interface.ts`, `toUserResponse(UserAggregate)` em `users/users.mapper.ts` (o de `users.select.ts` segue até T-13). `create` grava `must_change_password = 1`; `replaceTenants` grava `updated_by_id` em `user` (a tabela `user_tenant` não tem a coluna). `findInScope(id, [])` devolve `null` sem consultar. No e2e o repositório é construído sobre o stub de `DATABASE_CONNECTION` — quem passar a usá-lo no e2e (T-12/T-13) precisa de override.
+- [T-12] `AuthService` injeta `IUserRepository` (`USER_REPOSITORY`) e usa `toUserResponse` de `users.mapper.ts`; `AuthModule` importa `UsersModule`; `src/modules/auth` sem Prisma (5b1c8b2). O e2e não passa por auth, sem override.
+- [T-13] `UsersService(users, profiles, tenants, permissions, tenantAccess)` pronto (4bfa766); `users.select.ts` e `userScopeWhere` removidos, `src/modules/users` sem Prisma; `UsersModule` importa `ProfilesModule`/`TenantsModule`.
 
 ## Pendências
 - Proposta para o usuário aplicar em `.claude/settings.json` (não editado pelo plano): remover da allowlist `Bash(npx prisma generate)`, `Bash(npx prisma validate)` e `Bash(npx prisma migrate diff *)`. Se quiser, acrescentar `Bash(npm run db:migrate)` (aplica schema, avalie antes de liberar).
@@ -73,6 +78,9 @@
 - T-10: `toUserResponse` sem teste próprio (users.mapper.ts:24); `addIn` em Consome, mas o escopo usa `addRaw` com `IN (:scopeTenantIds)` (user-list.query.ts:589); teste de `create` não confere `must_change_password`/`active` (user.repository.spec.ts:323).
 - T-11: `profileIds.get(ADMIN_PROFILE) ?? ''` esconde perfil ausente (run-seed.ts:202); `permissionIds.get(key)` sem checagem de chave fora do catálogo (run-seed.ts:95); caso "senha ausente" não afirma ausência de INSERT em `user` (run-seed.spec.ts:136-144).
 - Validador (onda 3): grep global de prisma ainda com 138 linhas em arquivos de T-12/T-13/T-14 (com dona); npm ci e SHOW CREATE TABLE dependem de T-17; `db:seed` ainda aponta para prisma/seed.ts (T-14); seed não rodado em banco (T-17). T-13: `TenantsModule` não é global, importar para usar `TENANT_REPOSITORY`.
+- T-12: ramo `findById` → null (401 'Sessão inválida.') sem caso no spec (auth.service.ts:102); caso `limpa mustChangePassword ao trocar` não verifica o retorno de `changePassword` (auth.service.spec.ts:163).
+- T-13: ramo `findById` → null após `create` (404 USER_NOT_FOUND) sem teste (users.service.ts:230); RED falha por `TypeError: reachOf is not a function` em vez de asserção explícita (reports/T-13.md § RED); `backend/CLAUDE.md` cita `userScopeWhere`/`USER_SELECT` (dona T-15).
+- Validador (onda 4): grep global de prisma ainda encontra app.module.ts, database/prisma.service.ts, package.json, migration-runner, env.validation etc. (dona T-14); `npm ci` não rodado, adiado para T-17.
 
 ## Riscos
 - Datas deslocadas por fuso: a mitigação é UTC fixo no pool e o caso de teste em T-01, e T-17 compara um `createdAt` real antes e depois.
@@ -90,5 +98,6 @@
   - Onda 1: BASE 481715e → HEAD 714a370 (3dfaea6, c1686b8, 48e23ac, 714a370)
   - Onda 2: BASE 1a413ea → HEAD 1a1f7ce (f51d627, 64dff80, 6d2b876, 6686dbe, 9748701, aff7581, a7e549a, ad3c0c3, 85f844b, 1a1f7ce)
   - Onda 3: BASE 151d3a8 → HEAD 2403a80 (5f2b723, 905610e, 3f1072e, 61c7e1d, 5b660dd, 0fc23ce, 5ccd0cb, 2403a80)
-- Último status conhecido: onda 3 concluída (T-08 a T-11 [x]); validador e revisão sem bloqueantes.
-- Próxima onda recomendada: onda 4 (T-12 e T-13, dependências satisfeitas conforme plan.md)
+  - Onda 4: BASE fbfdcd4 → HEAD 4bfa766 (7e5f6a2, 4de4688, 5b1c8b2, 4bfa766)
+- Último status conhecido: onda 4 concluída (T-12 e T-13 [x]); validador e revisão sem bloqueantes.
+- Próxima onda recomendada: onda 5 (T-14, dependências satisfeitas conforme plan.md)

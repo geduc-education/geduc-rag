@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import {
   type ITenantAccessRepository,
   TENANT_ACCESS_REPOSITORY,
@@ -55,14 +54,5 @@ export class TenantAccessService {
     const reach = await this.reachOf(userId);
     if (!reach) return false;
     return reach.tenantIds === null || reach.tenantIds.includes(tenantId);
-  }
-
-  /**
-   * Filtro de tenant para listagens escopadas (`undefined` = sem filtro).
-   * Transitório: some quando os cadastros passarem a usar `scopeOf`.
-   */
-  tenantWhere(reach: TenantReach): Prisma.TenantWhereInput | undefined {
-    if (reach.tenantIds === null) return undefined;
-    return { id: { in: reach.tenantIds } };
   }
 }

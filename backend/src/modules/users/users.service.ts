@@ -1,22 +1,39 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
+import { isMysqlDuplicateEntry } from '../../@core/shared/exceptions/400/duplicate-entry';
 import { ERROR_CODES } from '../../common/errors/error-codes';
 import { EffectivePermissionsService } from '../../common/rbac/effective-permissions.service';
-import { TenantAccessService } from '../../common/tenancy/tenant-access.service';
-import { PrismaService } from '../../database/prisma.service';
+import {
+  scopeOf,
+  TenantAccessService,
+} from '../../common/tenancy/tenant-access.service';
+import {
+  type IProfileRepository,
+  PROFILE_REPOSITORY,
+} from '../profiles/application/interface/repository/profile.repository.interface';
+import {
+  type ITenantRepository,
+  TENANT_REPOSITORY,
+} from '../tenants/application/interface/repository/tenant.repository.interface';
+import {
+  type IUserRepository,
+  USER_REPOSITORY,
+  type UserAggregate,
+} from './application/interface/repository/user.repository.interface';
 import { AssignUserTenantsDto } from './dto/assign-user-tenants.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersDto } from './dto/list-users.dto';
 import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserListResponseDto, UserResponseDto } from './dto/user-response.dto';
+import { toUserResponse } from './users.mapper';
 import {
   assertCanDisable,
   assertCanModify,
@@ -26,16 +43,19 @@ import {
   mergeTenantAssignment,
   normalizeEmail,
   UserActor,
-  userScopeWhere,
 } from './users.policy';
-import { toUserResponse, USER_SELECT, UserWithRelations } from './users.select';
 
 const DEFAULT_PAGE_SIZE = 20;
 
 @Injectable()
 export class UsersService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(USER_REPOSITORY)
+    private readonly users: IUserRepository,
+    @Inject(PROFILE_REPOSITORY)
+    private readonly profiles: IProfileRepository,
+    @Inject(TENANT_REPOSITORY)
+    private readonly tenants: ITenantRepository,
     private readonly permissions: EffectivePermissionsService,
     private readonly tenantAccess: TenantAccessService,
   ) {}
@@ -45,26 +65,15 @@ export class UsersService {
     actorId: string,
   ): Promise<UserListResponseDto> {
     const actor = await this.loadActor(actorId);
-    const where: Prisma.UserWhereInput = {
-      AND: [
-        { deletedAt: null },
-        userScopeWhere(actor.reach),
-        this.listFilters(query),
-      ],
-    };
-    const page = query.page ?? 1;
-    const limit = query.limit ?? DEFAULT_PAGE_SIZE;
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.user.findMany({
-        where,
-        select: USER_SELECT,
-        orderBy: { name: 'asc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      this.prisma.user.count({ where }),
-    ]);
-    return { data: rows.map(toUserResponse), total };
+    const { data, total } = await this.users.list({
+      scope: scopeOf(actor.reach),
+      active: query.active,
+      tenantId: query.tenantId,
+      search: query.search,
+      page: query.page ?? 1,
+      limit: query.limit ?? DEFAULT_PAGE_SIZE,
+    });
+    return { data: data.map(toUserResponse), total };
   }
 
   async findOne(id: string, actorId: string): Promise<UserResponseDto> {
@@ -89,27 +98,18 @@ export class UsersService {
     await this.assertEmailAvailable(email);
     const passwordHash = await argon2.hash(dto.password);
 
-    const user = await this.withEmailConflict(() =>
-      this.prisma.user.create({
-        data: {
-          name: dto.name.trim(),
-          email,
-          passwordHash,
-          active: dto.active ?? true,
-          mustChangePassword: true,
-          createdById: actorId,
-          profiles: {
-            create: profileIds.map((profileId) => ({
-              profileId,
-              assignedById: actorId,
-            })),
-          },
-          tenants: { create: tenantIds.map((tenantId) => ({ tenantId })) },
-        },
-        select: USER_SELECT,
+    const id = await this.withEmailConflict(() =>
+      this.users.create({
+        name: dto.name.trim(),
+        email,
+        passwordHash,
+        active: dto.active ?? true,
+        createdById: actorId,
+        profileIds,
+        tenantIds,
       }),
     );
-    return toUserResponse(user);
+    return toUserResponse(await this.findExisting(id));
   }
 
   async update(
@@ -127,7 +127,7 @@ export class UsersService {
       await this.assertEmailAvailable(email, id);
     }
     if (dto.profileIds) {
-      const current = target.profiles.map(({ profile }) => profile.id);
+      const current = target.profiles.map((profile) => profile.id);
       await this.assertProfilesGrantable(
         actor,
         changedIds(current, dto.profileIds),
@@ -135,19 +135,12 @@ export class UsersService {
     }
 
     await this.withEmailConflict(() =>
-      this.prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id },
-          data: {
-            name: dto.name?.trim(),
-            email,
-            active: dto.active,
-            updatedById: actorId,
-          },
-        });
-        if (dto.profileIds) {
-          await this.replaceProfiles(tx, id, dto.profileIds, actorId);
-        }
+      this.users.update(id, {
+        name: dto.name?.trim(),
+        email,
+        active: dto.active,
+        updatedById: actorId,
+        profileIds: dto.profileIds,
       }),
     );
     return this.findOne(id, actorId);
@@ -161,24 +154,12 @@ export class UsersService {
     const actor = await this.loadActor(actorId);
     const target = await this.findInScope(id, actor);
     assertCanModify(actor, target);
-    const current = target.tenants.map(({ tenant }) => tenant.id);
+    const current = target.tenants.map((tenant) => tenant.id);
     const next = mergeTenantAssignment(actor.reach, current, dto.tenantIds);
     assertTenantsGrantable(actor.reach, current, next);
     await this.assertTenantsExist(changedIds(current, next));
 
-    await this.prisma.$transaction([
-      this.prisma.userTenant.deleteMany({
-        where: { userId: id, tenantId: { notIn: next } },
-      }),
-      this.prisma.userTenant.createMany({
-        data: next.map((tenantId) => ({ userId: id, tenantId })),
-        skipDuplicates: true,
-      }),
-      this.prisma.user.update({
-        where: { id },
-        data: { updatedById: actorId },
-      }),
-    ]);
+    await this.users.replaceTenants(id, next, actorId);
     return this.findOne(id, actorId);
   }
 
@@ -196,13 +177,10 @@ export class UsersService {
         message: 'Reative o usuário antes de redefinir a senha.',
       });
     }
-    await this.prisma.user.update({
-      where: { id },
-      data: {
-        passwordHash: await argon2.hash(dto.password),
-        mustChangePassword: true,
-        updatedById: actorId,
-      },
+    await this.users.updatePassword(id, {
+      passwordHash: await argon2.hash(dto.password),
+      mustChangePassword: true,
+      updatedById: actorId,
     });
   }
 
@@ -222,10 +200,7 @@ export class UsersService {
     const actor = await this.loadActor(actorId);
     const target = await this.findInScope(id, actor);
     assertCanDisable(actor, target);
-    await this.prisma.user.update({
-      where: { id },
-      data: { active: false, deletedAt: new Date(), deletedById: actorId },
-    });
+    await this.users.softDelete(id, actorId);
   }
 
   // ---------------------------------------------------------------------------
@@ -245,37 +220,17 @@ export class UsersService {
   private async findInScope(
     id: string,
     actor: UserActor,
-  ): Promise<UserWithRelations> {
-    const user = await this.prisma.user.findFirst({
-      where: { AND: [{ id, deletedAt: null }, userScopeWhere(actor.reach)] },
-      select: USER_SELECT,
-    });
-    if (!user) {
-      throw new NotFoundException({
-        code: ERROR_CODES.USER_NOT_FOUND,
-        message: 'Usuário não encontrado.',
-      });
-    }
+  ): Promise<UserAggregate> {
+    const user = await this.users.findInScope(id, scopeOf(actor.reach));
+    if (!user) throw userNotFound();
     return user;
   }
 
-  private listFilters(query: ListUsersDto): Prisma.UserWhereInput {
-    const search = query.search?.trim();
-    return {
-      ...(query.active !== undefined ? { active: query.active } : {}),
-      ...(query.tenantId
-        ? { tenants: { some: { tenantId: query.tenantId } } }
-        : {}),
-      ...(search
-        ? {
-            OR: [
-              // Case-insensitive pela collation das tabelas (utf8mb4_unicode_ci).
-              { name: { contains: search } },
-              { email: { contains: search } },
-            ],
-          }
-        : {}),
-    };
+  /** Recém-criado: lê sem filtro de alcance (o ator acabou de vinculá-lo). */
+  private async findExisting(id: string): Promise<UserAggregate> {
+    const user = await this.users.findById(id);
+    if (!user) throw userNotFound();
+    return user;
   }
 
   /** Perfis existentes e ativos; permissões deles concedíveis pelo ator. */
@@ -284,12 +239,7 @@ export class UsersService {
     profileIds: string[],
   ): Promise<void> {
     if (profileIds.length === 0) return;
-    const profiles = await this.prisma.profile.findMany({
-      where: { id: { in: profileIds }, active: true, deletedAt: null },
-      select: {
-        permissions: { select: { permission: { select: { key: true } } } },
-      },
-    });
+    const profiles = await this.profiles.findActiveByIds(profileIds);
     if (profiles.length !== profileIds.length) {
       throw new BadRequestException({
         code: ERROR_CODES.PROFILE_NOT_FOUND,
@@ -298,15 +248,13 @@ export class UsersService {
     }
     assertPermissionsGrantable(
       actor.permissions,
-      profiles.flatMap((p) => p.permissions.map((g) => g.permission.key)),
+      profiles.flatMap((profile) => profile.permissionKeys),
     );
   }
 
   private async assertTenantsExist(tenantIds: string[]): Promise<void> {
     if (tenantIds.length === 0) return;
-    const found = await this.prisma.tenant.count({
-      where: { id: { in: tenantIds }, deletedAt: null },
-    });
+    const found = await this.tenants.countExisting(tenantIds);
     if (found === tenantIds.length) return;
     throw new BadRequestException({
       code: ERROR_CODES.TENANT_NOT_FOUND,
@@ -319,46 +267,26 @@ export class UsersService {
     email: string,
     exceptId?: string,
   ): Promise<void> {
-    const existing = await this.prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
-    if (existing && existing.id !== exceptId) throw emailUnavailable();
+    const existingId = await this.users.findIdByEmail(email);
+    if (existingId && existingId !== exceptId) throw emailUnavailable();
   }
 
-  /** Corrida entre a checagem e a escrita: o unique do banco decide (P2002). */
+  /** Corrida entre a checagem e a escrita: o unique do banco decide. */
   private async withEmailConflict<T>(write: () => Promise<T>): Promise<T> {
     try {
       return await write();
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw emailUnavailable();
-      }
+      if (isMysqlDuplicateEntry(error)) throw emailUnavailable();
       throw error;
     }
   }
+}
 
-  private async replaceProfiles(
-    tx: Prisma.TransactionClient,
-    userId: string,
-    profileIds: string[],
-    actorId: string,
-  ): Promise<void> {
-    await tx.userProfile.deleteMany({
-      where: { userId, profileId: { notIn: profileIds } },
-    });
-    await tx.userProfile.createMany({
-      data: profileIds.map((profileId) => ({
-        userId,
-        profileId,
-        assignedById: actorId,
-      })),
-      skipDuplicates: true,
-    });
-  }
+function userNotFound(): NotFoundException {
+  return new NotFoundException({
+    code: ERROR_CODES.USER_NOT_FOUND,
+    message: 'Usuário não encontrado.',
+  });
 }
 
 function emailUnavailable(): ConflictException {

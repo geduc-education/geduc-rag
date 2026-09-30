@@ -13,7 +13,10 @@ import {
   TenantAccessService,
   TenantReach,
 } from '../../../common/tenancy/tenant-access.service';
-import type { IProfileRepository } from '../../profiles/application/interface/repository/profile.repository.interface';
+import type {
+  IProfileRepository,
+  ProfileWithPermissions,
+} from '../../profiles/application/interface/repository/profile.repository.interface';
 import type { ITenantRepository } from '../../tenants/application/interface/repository/tenant.repository.interface';
 import type {
   IUserRepository,
@@ -53,7 +56,9 @@ function makeUsers() {
     findById: jest.fn(),
     findCredentialsByEmail: jest.fn(),
     findActiveCredentialsById: jest.fn(),
-    findIdByEmail: jest.fn(() => Promise.resolve(null)),
+    findIdByEmail: jest.fn<Promise<string | null>, [string]>(() =>
+      Promise.resolve(null),
+    ),
     create: jest.fn(),
     update: jest.fn(),
     replaceTenants: jest.fn(),
@@ -66,7 +71,10 @@ function makeUsers() {
 function makeProfiles() {
   return {
     listActive: jest.fn(),
-    findActiveByIds: jest.fn(() => Promise.resolve([])),
+    findActiveByIds: jest.fn<
+      Promise<ProfileWithPermissions[]>,
+      [readonly string[]]
+    >(() => Promise.resolve([])),
   } satisfies Record<keyof IProfileRepository, jest.Mock>;
 }
 
@@ -121,9 +129,9 @@ describe('UsersService', () => {
       ),
     } as unknown as EffectivePermissionsService;
     service = new UsersService(
-      users as unknown as IUserRepository,
-      profiles as unknown as IProfileRepository,
-      tenants as unknown as ITenantRepository,
+      users,
+      profiles,
+      tenants,
       permissions,
       tenantAccess,
     );
@@ -229,7 +237,7 @@ describe('UsersService', () => {
     });
 
     it('409 neutro quando o e-mail já existe', async () => {
-      users.findIdByEmail.mockResolvedValue('outro' as never);
+      users.findIdByEmail.mockResolvedValue('outro');
       const error = await rejection(
         service.create({ ...baseCreate, tenantIds: [TENANT_A] }, 'actor'),
       );

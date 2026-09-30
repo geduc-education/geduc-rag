@@ -1,5 +1,4 @@
 import { ForbiddenException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { ERROR_CODES } from '../../common/errors/error-codes';
 import { EffectivePermissions } from '../../common/rbac/effective-permissions.service';
 import { TenantReach } from '../../common/tenancy/tenant-access.service';
@@ -21,12 +20,6 @@ export interface UserActor {
   id: string;
   reach: TenantReach;
   permissions: EffectivePermissions;
-}
-
-/** Filtro de alcance da listagem/leitura (`{}` = sem restrição). */
-export function userScopeWhere(reach: TenantReach): Prisma.UserWhereInput {
-  if (reach.tenantIds === null) return {};
-  return { tenants: { some: { tenantId: { in: reach.tenantIds } } } };
 }
 
 /** Elementos que entram OU saem ao trocar `current` por `next`. */

@@ -27,6 +27,10 @@
 - 2026-09-30 · T-12 · onda 4 — Desvios aceitos: `buildAuthResponse` lança UnauthorizedException quando `findById` devolve null; correção de lint do spec entrou no commit de implementação.
 - 2026-09-30 · T-13 · onda 4 — Desvio aceito: `create` relê o usuário via `users.findById`.
 - 2026-09-30 · T-12, T-13 · onda 4 — `não rodado: npm ci` aceito como adiado para T-17 (dona da validação de npm ci limpo), para não alterar node_modules no meio da migração.
+- 2026-09-30 · T-16 · onda 5 — O classificador do auto mode negou o commit do implementador em .claude/hooks/ (Self-Modification); o usuário autorizou o orquestrador a commitar. Antes, o orquestrador restaurou a detecção de `dropdb` em protect-db.sh (removida junto com os padrões do Prisma) e testou: dropdb → ask, DELETE sem WHERE → exit 2, DROP TABLE → ask, ls → passa.
+- 2026-09-30 · T-14 · onda 5 — Desvio aceito: build exigiu `"rootDir": "."` em tsconfig.build.json.
+- 2026-09-30 · T-14 · onda 5 — Critério `grep -ri prisma`: `_prisma_migrations`/`PRISMA_BASELINE` no migration-runner e no spec são resíduo legítimo (baseline). Menções textuais em src/@core/infra/adapters/mysql.adapter.ts:22, src/@core/infra/database/query-builder/filters.ts:45 e query-builder/README.md:16 ficam para a onda de correção após a revisão final.
+- 2026-09-30 · T-14 · onda 5 — `não rodado`: SHOW CREATE TABLE e `npm ci` real adiados para T-17 (dona); nesta onda só `npm ci --dry-run` com exit 0.
 
 ## Bloqueios
 - nenhum
@@ -47,6 +51,9 @@
 - [T-10] `USER_REPOSITORY = 'IUserRepository'` pronto e exportado pelo `UsersModule` (0fc23ce RED, 2403a80); tipos em `users/application/interface/repository/user.repository.interface.ts`, `toUserResponse(UserAggregate)` em `users/users.mapper.ts` (o de `users.select.ts` segue até T-13). `create` grava `must_change_password = 1`; `replaceTenants` grava `updated_by_id` em `user` (a tabela `user_tenant` não tem a coluna). `findInScope(id, [])` devolve `null` sem consultar. No e2e o repositório é construído sobre o stub de `DATABASE_CONNECTION` — quem passar a usá-lo no e2e (T-12/T-13) precisa de override.
 - [T-12] `AuthService` injeta `IUserRepository` (`USER_REPOSITORY`) e usa `toUserResponse` de `users.mapper.ts`; `AuthModule` importa `UsersModule`; `src/modules/auth` sem Prisma (5b1c8b2). O e2e não passa por auth, sem override.
 - [T-13] `UsersService(users, profiles, tenants, permissions, tenantAccess)` pronto (4bfa766); `users.select.ts` e `userScopeWhere` removidos, `src/modules/users` sem Prisma; `UsersModule` importa `ProfilesModule`/`TenantsModule`.
+- [T-14] Prisma removido (20b1318): deps, `prisma/`, `prisma.config.ts`, `PrismaService`; `db:seed` → `ts-node database/seed.ts`; `tsconfig.build.json` fixa `rootDir "."` para manter `dist/src/main`.
+- [T-15] Docs e agentes sem Prisma (5030a6e); nest-backend.md passou de PostgreSQL para MySQL.
+- [T-16] Hooks protect-migrations.sh e protect-db.sh no novo caminho (d6613db); `dropdb` continua detectado.
 
 ## Pendências
 - Proposta para o usuário aplicar em `.claude/settings.json` (não editado pelo plano): remover da allowlist `Bash(npx prisma generate)`, `Bash(npx prisma validate)` e `Bash(npx prisma migrate diff *)`. Se quiser, acrescentar `Bash(npm run db:migrate)` (aplica schema, avalie antes de liberar).
@@ -81,6 +88,13 @@
 - T-12: ramo `findById` → null (401 'Sessão inválida.') sem caso no spec (auth.service.ts:102); caso `limpa mustChangePassword ao trocar` não verifica o retorno de `changePassword` (auth.service.spec.ts:163).
 - T-13: ramo `findById` → null após `create` (404 USER_NOT_FOUND) sem teste (users.service.ts:230); RED falha por `TypeError: reachOf is not a function` em vez de asserção explícita (reports/T-13.md § RED); `backend/CLAUDE.md` cita `userScopeWhere`/`USER_SELECT` (dona T-15).
 - Validador (onda 4): grep global de prisma ainda encontra app.module.ts, database/prisma.service.ts, package.json, migration-runner, env.validation etc. (dona T-14); `npm ci` não rodado, adiado para T-17.
+- Validador (onda 5): comentário desatualizado ("in-memory") em app.module.ts:40 (não é Prisma).
+- T-14: `.env.example` ainda exemplifica `?allowPublicKeyRetrieval=true` na URL apesar de dizer que query params são ignorados (backend/.env.example:13-16).
+- T-14: comentário do módulo raiz diz que a infra `@core` é "ainda in-memory", o que não vale com `RAG_STORAGE=mysql` (app.module.ts:40).
+- T-15: `scopeOf` citado como de `users.policy.ts`, mas definido em `common/tenancy/tenant-access.service.ts:23` (backend/CLAUDE.md:47-50); lista de destrutivos redundante e linhas > 80 colunas (.claude/CLAUDE.md:48-49); indentação da árvore de pastas desalinhada (backend/CLAUDE.md:26).
+- T-16: relatório ficou com "Status: parcial" e "Commit não feito", superado pelo commit d6613db; `dropdb` mantido em bloco próprio, divergência autorizada da Interface.
+- Menções textuais a Prisma restantes: mysql.adapter.ts:22, query-builder/filters.ts:45 e query-builder/README.md:16 (limpeza na onda de correção após a revisão final).
+- Onda 5 não rodou SHOW CREATE TABLE nem `npm ci` real (só `--dry-run`): dependem de T-17.
 
 ## Riscos
 - Datas deslocadas por fuso: a mitigação é UTC fixo no pool e o caso de teste em T-01, e T-17 compara um `createdAt` real antes e depois.
@@ -99,5 +113,6 @@
   - Onda 2: BASE 1a413ea → HEAD 1a1f7ce (f51d627, 64dff80, 6d2b876, 6686dbe, 9748701, aff7581, a7e549a, ad3c0c3, 85f844b, 1a1f7ce)
   - Onda 3: BASE 151d3a8 → HEAD 2403a80 (5f2b723, 905610e, 3f1072e, 61c7e1d, 5b660dd, 0fc23ce, 5ccd0cb, 2403a80)
   - Onda 4: BASE fbfdcd4 → HEAD 4bfa766 (7e5f6a2, 4de4688, 5b1c8b2, 4bfa766)
-- Último status conhecido: onda 4 concluída (T-12 e T-13 [x]); validador e revisão sem bloqueantes.
-- Próxima onda recomendada: onda 5 (T-14, dependências satisfeitas conforme plan.md)
+  - Onda 5: BASE 74e324a → HEAD d6613db (5030a6e, 20b1318, d6613db)
+- Último status conhecido: onda 5 concluída (T-14, T-15 e T-16 [x]); validador e revisão sem bloqueantes.
+- Próxima onda recomendada: onda 6 (T-17, validação final)

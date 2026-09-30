@@ -76,10 +76,7 @@ describe('AuthService', () => {
     verify.mockReset();
     users = userRepositoryMock();
     jwt = { signAsync: jest.fn(() => Promise.resolve('token')) };
-    service = new AuthService(
-      users as unknown as IUserRepository,
-      jwt as unknown as JwtService,
-    );
+    service = new AuthService(users, jwt as unknown as JwtService);
   });
 
   describe('login', () => {

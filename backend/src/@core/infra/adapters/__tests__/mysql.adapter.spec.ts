@@ -14,21 +14,29 @@ function makeConnection() {
   };
 }
 
+interface FakePool {
+  query: jest.Mock;
+  getConnection: jest.Mock;
+  end: jest.Mock;
+  on: jest.Mock;
+}
+
 function makePool(conn = makeConnection()) {
   const listeners: ConnectionListener[] = [];
-  const pool = {
+  const pool: FakePool = {
     query: jest.fn().mockResolvedValue([[{ id: 1 }], []]),
     getConnection: jest.fn().mockResolvedValue(conn),
     end: jest.fn().mockResolvedValue(undefined),
-    on: jest.fn((event: string, listener: ConnectionListener) => {
-      if (event === 'connection') listeners.push(listener);
-      return pool;
-    }),
+    on: jest.fn(),
   };
+  pool.on.mockImplementation((event: string, listener: ConnectionListener) => {
+    if (event === 'connection') listeners.push(listener);
+    return pool;
+  });
   return { pool, conn, listeners };
 }
 
-function adapterOf(pool: ReturnType<typeof makePool>['pool']) {
+function adapterOf(pool: FakePool) {
   return new MysqlAdapter(pool as unknown as Pool);
 }
 
@@ -72,7 +80,7 @@ describe('MysqlAdapter', () => {
     expect(listeners).toHaveLength(1);
     const newConn = { query: jest.fn() };
     listeners[0](newConn);
-    expect(newConn.query.mock.calls[0][0]).toBe("SET time_zone = '+00:00'");
+    expect(sqlCalls(newConn.query)[0]).toBe("SET time_zone = '+00:00'");
   });
 
   it('não abre conexão no construtor', () => {

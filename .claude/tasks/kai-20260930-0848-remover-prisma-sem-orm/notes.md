@@ -20,6 +20,10 @@
 - 2026-09-30 · T-07 · onda 2 — Erros prettier/no-unnecessary-type-assertion apontados pelo hook check-complexity foram repassados ao implementador e corrigidos antes do commit (sem fix loop).
 - 2026-09-30 · T-04 · onda 2 — Desvio aceito: `list` roda página e count em `Promise.all` fora de transação.
 - 2026-09-30 · T-06 · onda 2 — Upsert com `VALUES(col)` (deprecado no MySQL 8) aceito; validar no banco real em T-17.
+- 2026-09-30 · T-09 · onda 3 — RED 61c7e1d inclui tenant.repository.spec.ts além do tenants.service.spec.ts declarado; aceito (commit só de teste, sem implementação), sem reescrita de histórico.
+- 2026-09-30 · T-10 · onda 3 — Desvios aceitos: `p.active = 1` literal nas queries em lote; `replaceTenants` grava `updated_by_id` em `user` (`user_tenant` não tem a coluna).
+- 2026-09-30 · T-11 · onda 3 — Desvios aceitos: SELECT id após upsert, transação na regravação de perfis e na criação do SUPERADMIN, 4º caso de teste.
+- 2026-09-30 · T-10 · onda 3 — Lint transitório do RED (user.repository.spec.ts, TS2307) acusado pelo hook check-complexity, resolvido pela implementação, sem ação.
 
 ## Bloqueios
 - nenhum
@@ -34,6 +38,10 @@
 - [T-03] Runner pronto (f51d627, aff7581): migrations 0001/0002 idênticas ao Prisma (cmp), CLI `backend/database/migrate.ts`, script `db:migrate`; `MigrationConnection.query` devolve linhas.
 - [T-05] `ConversationRepository` em SQL substitui o Prisma; `src/modules/chat` não referencia mais `PrismaService` (85f844b).
 - [T-07] `buildEffectivePermissions(grants: UserGrants)`, `scopeOf`/`TenantScope` e tokens `'IEffectivePermissionsRepository'`/`'ITenantAccessRepository'` prontos; o e2e sobrescreve `DATABASE_CONNECTION` com stub que rejeita chamadas, então repositório novo no e2e precisa de override próprio; interfaces injetadas via `@Inject` exigem `import type` (TS1272).
+- [T-08] `PROFILE_REPOSITORY = 'IProfileRepository'`, `IProfileRepository`/`ProfileWithPermissions` em `profiles/application/interface/repository/profile.repository.interface.ts`; `ProfilesModule` exporta `PROFILE_REPOSITORY` (quem consome importa `ProfilesModule`). `src/modules/profiles` não referencia mais Prisma.
+- [T-11] `runSeed` em `backend/src/database/seed/run-seed.ts` e CLI `backend/database/seed.ts` prontos (905610e RED, 5b660dd); T-14 deve apontar `db:seed` (e remover o bloco `"prisma": { "seed" }`) para `ts-node database/seed.ts`. `prisma/seed.ts` continua intacto até T-14.
+- [T-09] `TENANT_REPOSITORY = 'ITenantRepository'`/`ITenantRepository` prontos e exportados por `TenantsModule` (interface em `modules/tenants/application/interface/repository/tenant.repository.interface.ts`; `countExisting([])` → 0 sem SQL). `tenantWhere()` e o import de Prisma saíram de `tenant-access.service.ts`. `TenantsModule` não é global: quem consumir `TENANT_REPOSITORY` (ex.: users) precisa importar `TenantsModule`.
+- [T-10] `USER_REPOSITORY = 'IUserRepository'` pronto e exportado pelo `UsersModule` (0fc23ce RED, 2403a80); tipos em `users/application/interface/repository/user.repository.interface.ts`, `toUserResponse(UserAggregate)` em `users/users.mapper.ts` (o de `users.select.ts` segue até T-13). `create` grava `must_change_password = 1`; `replaceTenants` grava `updated_by_id` em `user` (a tabela `user_tenant` não tem a coluna). `findInScope(id, [])` devolve `null` sem consultar. No e2e o repositório é construído sobre o stub de `DATABASE_CONNECTION` — quem passar a usá-lo no e2e (T-12/T-13) precisa de override.
 
 ## Pendências
 - Proposta para o usuário aplicar em `.claude/settings.json` (não editado pelo plano): remover da allowlist `Bash(npx prisma generate)`, `Bash(npx prisma validate)` e `Bash(npx prisma migrate diff *)`. Se quiser, acrescentar `Bash(npm run db:migrate)` (aplica schema, avalie antes de liberar).
@@ -60,6 +68,11 @@
 - T-07: `scopeOf` sem teste; só é exercitado a partir de T-09/T-10 (tenant-access.service.ts:22).
 - T-07: "ignora tenant excluído" provado só por `toContain('t.deleted_at IS NULL')`; verificar no MySQL real em T-17 (tenant-access.repository.spec.ts:64).
 - Validador (onda 2): `import { Prisma }` e `tenantWhere` restantes em tenant-access.service.ts:2,64 são permitidos até T-09; grep prisma global, npm ci, SHOW CREATE TABLE e `db:migrate` contra banco real dependem de T-08…T-17.
+- T-08: `ProfilesService.list` sem spec (profiles.service.ts:16); `findActiveByIds` sem asserção de `ORDER BY p.name ASC` e `active = ?` (profile.repository.spec.ts:83).
+- T-09: aliases `CreateTenantInput`/`UpdateTenantInput` no lugar do literal de Produz (tenant.repository.interface.ts:14-38); "fora do alcance sem consultar" já passava no RED (tenants.service.spec.ts:75-82); "tenant sumido depois do UPDATE" usa `rejects.toThrow()` genérico (tenant.repository.spec.ts:189-195).
+- T-10: `toUserResponse` sem teste próprio (users.mapper.ts:24); `addIn` em Consome, mas o escopo usa `addRaw` com `IN (:scopeTenantIds)` (user-list.query.ts:589); teste de `create` não confere `must_change_password`/`active` (user.repository.spec.ts:323).
+- T-11: `profileIds.get(ADMIN_PROFILE) ?? ''` esconde perfil ausente (run-seed.ts:202); `permissionIds.get(key)` sem checagem de chave fora do catálogo (run-seed.ts:95); caso "senha ausente" não afirma ausência de INSERT em `user` (run-seed.spec.ts:136-144).
+- Validador (onda 3): grep global de prisma ainda com 138 linhas em arquivos de T-12/T-13/T-14 (com dona); npm ci e SHOW CREATE TABLE dependem de T-17; `db:seed` ainda aponta para prisma/seed.ts (T-14); seed não rodado em banco (T-17). T-13: `TenantsModule` não é global, importar para usar `TENANT_REPOSITORY`.
 
 ## Riscos
 - Datas deslocadas por fuso: a mitigação é UTC fixo no pool e o caso de teste em T-01, e T-17 compara um `createdAt` real antes e depois.
@@ -76,5 +89,6 @@
 - Commits por onda:
   - Onda 1: BASE 481715e → HEAD 714a370 (3dfaea6, c1686b8, 48e23ac, 714a370)
   - Onda 2: BASE 1a413ea → HEAD 1a1f7ce (f51d627, 64dff80, 6d2b876, 6686dbe, 9748701, aff7581, a7e549a, ad3c0c3, 85f844b, 1a1f7ce)
-- Último status conhecido: onda 2 concluída (T-03 a T-07 [x]); validador e revisão sem bloqueantes.
-- Próxima onda recomendada: onda 3 (tasks pendentes com dependências satisfeitas, conforme plan.md: T-08, T-09, T-10, T-11…)
+  - Onda 3: BASE 151d3a8 → HEAD 2403a80 (5f2b723, 905610e, 3f1072e, 61c7e1d, 5b660dd, 0fc23ce, 5ccd0cb, 2403a80)
+- Último status conhecido: onda 3 concluída (T-08 a T-11 [x]); validador e revisão sem bloqueantes.
+- Próxima onda recomendada: onda 4 (T-12 e T-13, dependências satisfeitas conforme plan.md)

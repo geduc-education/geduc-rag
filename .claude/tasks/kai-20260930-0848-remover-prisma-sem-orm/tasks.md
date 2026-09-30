@@ -9,11 +9,11 @@
 | T-05 | backend | `ConversationRepository` em SQL (upsert + mensagens em lote na transação) e wiring em `chat.providers.ts` | T-01 | sim | média | Aang | [x] |
 | T-06 | backend | `MysqlVectorStoreClient` e wiring em `vector-store.module.ts` | T-01 | sim | média | Saitama | [x] |
 | T-07 | backend | Repositórios de RBAC e tenancy; `EffectivePermissionsService` e `TenantAccessService` sem Prisma; e2e sobrescreve os repositórios | T-01 | sim | alta | Jaspion | [x] |
-| T-08 | backend | `IProfileRepository` + `ProfilesService` sem Prisma | T-01 | sim | simples | Levi | [ ] |
-| T-09 | backend | `ITenantRepository` + `TenantsService` sem Prisma; `tenantWhere()` removido | T-01, T-02, T-07 | sim | média | Yoda | [ ] |
-| T-10 | backend | `IUserRepository` (agregado em lote por `IN`, vínculos N:N) e `users.mapper.ts` | T-01, T-02, T-07 | sim | alta | Goku | [ ] |
-| T-11 | database | Seed novo sem Prisma (`runSeed` + CLI `backend/database/seed.ts`) | T-01 | sim | média | Naruto | [ ] |
-| T-12 | backend | `AuthService` sobre `IUserRepository` | T-10 | sim | média | Kratos | [ ] |
+| T-08 | backend | `IProfileRepository` + `ProfilesService` sem Prisma | T-01 | sim | simples | Levi | [x] |
+| T-09 | backend | `ITenantRepository` + `TenantsService` sem Prisma; `tenantWhere()` removido | T-01, T-02, T-07 | sim | média | Yoda | [x] |
+| T-10 | backend | `IUserRepository` (agregado em lote por `IN`, vínculos N:N) e `users.mapper.ts` | T-01, T-02, T-07 | sim | alta | Goku | [x] |
+| T-11 | database | Seed novo sem Prisma (`runSeed` + CLI `backend/database/seed.ts`) | T-01 | sim | média | Naruto | [x] |
+| T-12 | backend | `AuthService` sobre `IUserRepository` | T-10 | sim | média | Kratos | [x] |
 | T-13 | backend | `UsersService` e `users.policy.ts` sobre repositórios; `users.select.ts` removido | T-02, T-07, T-08, T-09, T-10 | sim | alta | Thanos | [ ] |
 | T-14 | infra | Remoção do Prisma: deps, `prisma/`, `prisma.config.ts`, `PrismaService`, Dockerfile, dotfiles, e2e, comentários | T-03, T-04, T-05, T-06, T-07, T-08, T-09, T-10, T-11, T-12, T-13 | sim | média | Maquiavel | [ ] |
 | T-15 | docs | Docs e agentes sem Prisma (regras de SQL/repositório e de migration) | T-03, T-11, T-13 | sim | média | Gandalf | [ ] |

@@ -2,6 +2,7 @@ import 'package:flutter_modular/flutter_modular.dart';
 
 import '../../core/auth/permission_service.dart';
 import '../../core/storage/local_preferences.dart';
+import '../academic_calendar/academic_calendar_module.dart';
 import '../auth/guards/auth_guard.dart';
 import '../auth/guards/must_change_password_guard.dart';
 import '../changelog/changelog_module.dart';
@@ -30,6 +31,7 @@ final homeModule = createModule(
       ),
     );
     registerUsersBinds(c);
+    registerAcademicCalendarBinds(c);
     registerRagAssistantBinds(c);
     registerChangelogBinds(c);
     c.route(
@@ -39,6 +41,7 @@ final homeModule = createModule(
       children: (r) {
         r.route('/dashboard', child: (_, _) => const DashboardPage());
         registerUsersRoutes(r);
+        registerAcademicCalendarRoutes(r);
         registerRagAssistantRoutes(r);
         registerChangelogRoutes(r);
       },

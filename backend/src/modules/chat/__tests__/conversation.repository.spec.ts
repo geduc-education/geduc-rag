@@ -32,7 +32,7 @@ function makeConnection(options: FakeOptions = {}) {
   const build = (inTx: boolean): ITransactionalConnection => {
     const record = (method: string, sql: string, params: SqlParams = []) =>
       calls.push({ method, sql, params, inTx });
-    return {
+    const fake = {
       query: jest.fn((sql: string, params?: SqlParams) => {
         record('query', sql, params);
         return Promise.resolve(options.messageRows ?? []);
@@ -58,6 +58,7 @@ function makeConnection(options: FakeOptions = {}) {
         return Promise.resolve({ affectedRows: 1, insertId: 0 });
       }),
     };
+    return fake as unknown as ITransactionalConnection;
   };
 
   const tx = build(true);

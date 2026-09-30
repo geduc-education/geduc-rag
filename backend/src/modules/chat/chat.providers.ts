@@ -2,9 +2,12 @@ import { IConversationRepository } from './application/interface/repository/conv
 import { IRetrievalContextGateway } from './application/interface/gateways/retrieval-context.gateway.interface';
 import { IAnswerGenerationGateway } from './application/interface/gateways/answer-generation.gateway.interface';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../database/prisma.service';
+import {
+  DATABASE_CONNECTION,
+  IDatabaseConnection,
+} from '../../@core/application/adapters/database-connection.interface';
 import { InMemoryConversationRepository } from './infra/database/repositories/in-memory-conversation.repository';
-import { PrismaConversationRepository } from './infra/database/repositories/prisma-conversation.repository';
+import { ConversationRepository } from './infra/database/repositories/conversation.repository';
 import { RetrievalContextGateway } from './infra/gateways/retrieval-context.gateway';
 import { AnswerGenerationGateway } from './infra/gateways/answer-generation.gateway';
 import { RetrieveContextUseCase } from '../retrieval/application/usecase/retrieval/retrieve-context.usecase';
@@ -18,12 +21,12 @@ export namespace CHAT_PROVIDERS {
       provide: 'IConversationRepository',
       useFactory: (
         config: ConfigService,
-        prisma: PrismaService,
+        connection: IDatabaseConnection,
       ): IConversationRepository =>
         config.get<string>('RAG_STORAGE') === 'memory'
           ? new InMemoryConversationRepository()
-          : new PrismaConversationRepository(prisma),
-      inject: [ConfigService, PrismaService],
+          : new ConversationRepository(connection),
+      inject: [ConfigService, DATABASE_CONNECTION],
     };
   }
 

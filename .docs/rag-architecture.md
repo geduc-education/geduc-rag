@@ -8,11 +8,11 @@
 > `config/env.validation.ts` (class-validator) no lugar da config Joi; erros pelo
 > `AllExceptionsFilter` do geduc-suporte (`{ statusCode, message, code? }`).
 > O restante (estrutura dos módulos RAG, fronteiras, providers) segue valendo.
-> **Estado atual:** `RAG_STORAGE=mysql` usa repositórios Prisma, e o vector
-> store é o próprio MySQL — `document_chunk.embedding` é um `Bytes @db.Blob`
+> **Estado atual:** `RAG_STORAGE=mysql` usa repositórios em SQL parametrizado
+> (mysql2), e o vector store é o próprio MySQL — `document_chunk.embedding` é um `BLOB`
 > (Float32 little-endian) e a busca por similaridade é uma varredura linear
-> em Node, filtrada por `tenantId` e `dimensions` (`@@index([tenantId,
-> dimensions])`), não um vector store dedicado. `EMBEDDING_PROVIDER=local`
+> em Node, filtrada por `tenantId` e `dimensions` (índice em
+> `(tenant_id, dimensions)`), não um vector store dedicado. `EMBEDDING_PROVIDER=local`
 > (transformers.js) e `LLM_PROVIDER=ollama` (Ollama local, `qwen2.5:7b`) são
 > os providers reais disponíveis, além de `mock`; ver
 > `.docs/ollama-setup.md`.
@@ -364,7 +364,7 @@ Todos os nomes de arquivo em **inglês**.
 | Variável | Propósito |
 |---|---|
 | `DATABASE_URL` | MySQL (metadados, documentos, chunks/vetores, histórico de chat) |
-| `RAG_STORAGE` (`mysql` \| `memory`) | Repositórios Prisma vs. adapters in-memory (e2e/dev sem banco) |
+| `RAG_STORAGE` (`mysql` \| `memory`) | Repositórios SQL (mysql2) vs. adapters in-memory (e2e/dev sem banco) |
 | `EMBEDDING_PROVIDER` (`mock` \| `local`), `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS`, `EMBEDDING_QUERY_PREFIX`, `EMBEDDING_PASSAGE_PREFIX`, `EMBEDDING_CACHE_DIR` | Provider de embedding (transformers.js quando `local`) |
 | `LLM_PROVIDER` (`mock` \| `ollama`), `LLM_BASE_URL`, `LLM_MODEL`, `LLM_TIMEOUT_MS`, `LLM_MAX_OUTPUT_TOKENS`, `LLM_CONTEXT_WINDOW_TOKENS` | Provider de geração (Ollama local quando `ollama`) |
 | `CHUNK_SIZE`, `CHUNK_OVERLAP` | Estratégia default de chunking |

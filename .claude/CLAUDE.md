@@ -5,14 +5,14 @@ vector store; assistente que responde com citações. Identidade própria (login
 e-mail/senha), RBAC N:N (`User` ↔ `Profile` ↔ `Permission`) e vínculo N:N
 usuário ↔ tenant.
 
-Stack: **Backend** NestJS 11 + TypeScript + Prisma 7 + MySQL ·
+Stack: **Backend** NestJS 11 + TypeScript + mysql2 (SQL parametrizado) + MySQL ·
 **Frontend** Flutter Web (FVM) + flutter_modular + Dio.
 
 ## Estrutura do monorepo
 
 ```text
 geduc-rag/
-  backend/    ← NestJS + TypeScript + Prisma + MySQL (+ pipeline RAG)
+  backend/    ← NestJS + TypeScript + mysql2 + MySQL (+ pipeline RAG)
   frontend/   ← Flutter Web + flutter_modular + Dio
   infra/      ← MySQL de dev
   .claude/    ← agents, hooks e configuração
@@ -45,11 +45,11 @@ geduc-rag/
 
 ## Segurança e salvaguardas
 
-- **Nunca** rode comandos destrutivos de banco (`migrate reset`, `db push
-  --force-reset`, `DROP`, `TRUNCATE`, `DELETE` sem `WHERE`) sem confirmação. O
-  hook `protect-db.sh` bloqueia/pede confirmação — não contorne.
-- Antes de migration/seed, confirme `DATABASE_URL` em `localhost`. Após mudar
-  `schema.prisma`, sempre `npx prisma generate`.
+- **Nunca** rode comandos destrutivos de banco (`DROP DATABASE`, recriar o schema do zero, `DROP`, `TRUNCATE`, `DELETE`
+  sem `WHERE`) sem confirmação. O hook `protect-db.sh` bloqueia/pede confirmação — não contorne.
+- Antes de migration/seed, confirme `DATABASE_URL` em `localhost`. Mudança de
+  schema = nova migration `backend/database/migrations/NNNN_*.sql` (nunca editar
+  uma já aplicada) + `npm run db:migrate` em banco local.
 - **Nunca** leia/imprima/comite segredos (`.env`, chaves). Config vai para
   `.env.example` com placeholders.
 - O seed tem guard `NODE_ENV=production` — não remova.
@@ -60,7 +60,7 @@ geduc-rag/
 | Hook | Evento | O que faz |
 |---|---|---|
 | `protect-db.sh` | `PreToolUse` (Bash) | Nega `DELETE` sem `WHERE`; destrutivos viram confirmação manual. |
-| `protect-migrations.sh` | `PreToolUse` (Edit\|Write) | Edição em `backend/prisma/migrations/**` pede confirmação. |
+| `protect-migrations.sh` | `PreToolUse` (Edit\|Write) | Edição em `backend/database/migrations/**` pede confirmação. |
 | `format-file.sh` | `PostToolUse` (Edit\|Write) | `eslint --fix` (backend `.ts`) / `fvm dart format` (frontend `.dart`). |
 | `check-complexity.sh` | `Stop` | Complexidade ciclomática dos arquivos alterados; bloqueia acima do limite. |
 

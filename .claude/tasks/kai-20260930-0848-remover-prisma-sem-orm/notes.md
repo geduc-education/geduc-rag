@@ -15,6 +15,8 @@
 - 2026-09-30 · plano · onda 0 — Migrations não rodam no arranque do container. Hoje também não rodam (o `CMD` é só `node dist/src/main`; o comentário do Dockerfile sobre `migrate deploy` está errado).
 - 2026-09-30 · plano · onda 0 — `tsconfig.build.json` troca `prisma` por `database` no `exclude` (CLIs de migrate e seed rodam por `ts-node`, fora do `dist`). O `tsc --noEmit` do `tsconfig.json` continua cobrindo `backend/database/*.ts`.
 - 2026-09-30 · plano · onda 0 — `key` e `system` são palavras reservadas do MySQL 8: todo SQL as escreve com crase.
+- 2026-09-30 · T-01 · onda 1 — Erro prettier em mysql.adapter.ts:137 apontado pelo hook check-complexity foi corrigido durante a onda (instrução do orquestrador, sem fix loop).
+- 2026-09-30 · T-02 · onda 1 — DuplicateEntryException não portada (a Interface da task não pedia); só isMysqlDuplicateEntry.
 
 ## Bloqueios
 - nenhum
@@ -24,10 +26,19 @@
 - `npm run lint` tem `--fix` embutido, e o hook `format-file.sh` roda `eslint --fix` em cada `.ts` editado. Use `npx eslint "{src,test}/**/*.ts"` para verificar.
 - `users.policy.spec.ts` e `tenant.guard.spec.ts` não usam Prisma; `users.policy.spec.ts` só muda por causa de `userScopeWhere`.
 - O `IDocumentRepository.list` e o `UsersService.list` já devolvem `{ data, total }`.
+- [T-01] DATABASE_CONNECTION/IDatabaseConnection prontos (714a370). ensureSafeWhere também recusa `/*` e qualquer `#`/`--` no SQL inteiro e exige operador depois do primeiro WHERE; update/delete só servem para UPDATE/DELETE com WHERE, e `INSERT … ON DUPLICATE KEY UPDATE` vai por insert.
 
 ## Pendências
 - Proposta para o usuário aplicar em `.claude/settings.json` (não editado pelo plano): remover da allowlist `Bash(npx prisma generate)`, `Bash(npx prisma validate)` e `Bash(npx prisma migrate diff *)`. Se quiser, acrescentar `Bash(npm run db:migrate)` (aplica schema, avalie antes de liberar).
 - T-17 depende do container MySQL local no ar e de o usuário `rag` ter permissão de `CREATE DATABASE` para o banco descartável `geduc_rag_runner_check`. Sem essa permissão, a comparação de schema vira pendência de ambiente. O banco descartável não é removido pelo agente, porque `DROP DATABASE` exige confirmação.
+- T-01: ensureSafeWhere aceita `WHERE 1=1 LIMIT n`, `WHERE 1=1 OR id = ?`, `WHERE id = id` e UPDATE com subquery WHERE sem WHERE externo (mutation-guard.ts:25-34).
+- T-01: `query()` executa UPDATE/DELETE sem a guarda; depende de disciplina dos repositórios (mysql.adapter.ts:59-64).
+- T-01: falha do ROLLBACK substitui o erro original e a conexão volta ao pool por release(); considerar preservar o erro e `conn.destroy()` (mysql.adapter.ts:135-137).
+- T-01: cobertura do fuso UTC é só de configuração; a leitura real de registro gravado pelo Prisma fica para o smoke de T-17.
+- T-02: nome de param repetido entre filtros sobrescreve o valor em silêncio (filters.ts:20,67); considerar InvalidQueryError em colisão, pois T-07/T-10 compõem addRaw com EXISTS.
+- T-02: toPositional casa `:letra` dentro de literal SQL e lança "Parâmetro ausente"; documentar no README (sql-params.ts:15).
+- T-02: caso de teste diz "undefined/null" mas só testa null; `{ x: undefined }` é aceito e o mysql2 o trata diferente de null (query-builder.spec.ts:28).
+- Critérios cruzados de grep prisma, SHOW CREATE TABLE e npm ci dependem de ondas posteriores.
 
 ## Riscos
 - Datas deslocadas por fuso: a mitigação é UTC fixo no pool e o caso de teste em T-01, e T-17 compara um `createdAt` real antes e depois.
@@ -40,7 +51,8 @@
 - Pasta: `.claude/tasks/kai-20260930-0848-remover-prisma-sem-orm/`
 - Sessões: 26399f40-1989-4b2a-a596-b3f96a533b34
 - Branch de trabalho: task/remover-prisma-sem-orm (base: main)
-- BASE da onda 1: {hash7}
-- Commits por onda: {Onda N: BASE <hash7> → HEAD <hash7> (<hashes dos commits>)}
-- Último status conhecido: {resumo}
-- Próxima onda recomendada: {onda}
+- BASE da onda 1: 481715e
+- Commits por onda:
+  - Onda 1: BASE 481715e → HEAD 714a370 (3dfaea6, c1686b8, 48e23ac, 714a370)
+- Último status conhecido: onda 1 concluída (T-01 e T-02 [x]); validador e revisão sem bloqueantes.
+- Próxima onda recomendada: onda 2 (T-03, T-04 e demais com dependências T-01/T-02 satisfeitas, conforme plan.md)

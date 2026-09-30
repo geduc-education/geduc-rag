@@ -11,3 +11,4 @@ cat >> "/home/kaine/source/geduc-rag/.claude/tasks/kai-20260930-0848-remover-pri
 - [T-NN] <fato>
 EOF
 ```
+- [T-01] `DATABASE_CONNECTION`/`IDatabaseConnection` prontos (commit 714a370). `ensureSafeWhere` também recusa `/*` e qualquer `#`/`--` no SQL inteiro, e exige operador (`=`, `<>`, `!=`, `<`, `>`, `IN (`, `IS [NOT] NULL`, `LIKE`, `BETWEEN`, `EXISTS`) depois do primeiro `WHERE`. O `update`/`delete` só servem para UPDATE/DELETE com WHERE; `INSERT … ON DUPLICATE KEY UPDATE` vai por `insert`.

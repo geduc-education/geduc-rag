@@ -2,8 +2,8 @@
 
 | ID | Camada | Descrição | Dependências | Paralelizável | Complexidade | Agente | Status |
 |---|---|---|---|---|---|---|---|
-| T-01 | infra | Porta `IDatabaseConnection`, `MysqlAdapter` (mysql2), guarda de mutação e `DatabaseModule` com `DATABASE_CONNECTION` convivendo com o Prisma | — | sim | alta | Platão | [ ] |
-| T-02 | infra | Query builder mínimo (`:named` → `?`, filtros, SELECT paginado com allow-list) e `isMysqlDuplicateEntry` | — | sim | média | Arquimedes | [ ] |
+| T-01 | infra | Porta `IDatabaseConnection`, `MysqlAdapter` (mysql2), guarda de mutação e `DatabaseModule` com `DATABASE_CONNECTION` convivendo com o Prisma | — | sim | alta | Platão | [x] |
+| T-02 | infra | Query builder mínimo (`:named` → `?`, filtros, SELECT paginado com allow-list) e `isMysqlDuplicateEntry` | — | sim | média | Arquimedes | [x] |
 | T-03 | database | Runner de migration (`schema_migrations` + checksum), baseline 0001/0002 e `npm run db:migrate` | T-01 | sim | alta | Spock | [ ] |
 | T-04 | backend | `DocumentRepository` em SQL e wiring em `documents.providers.ts` | T-01, T-02 | sim | média | Darwin | [ ] |
 | T-05 | backend | `ConversationRepository` em SQL (upsert + mensagens em lote na transação) e wiring em `chat.providers.ts` | T-01 | sim | média | Aang | [ ] |

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -7,9 +8,13 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { ERROR_CODES } from '../../common/errors/error-codes';
 import { JwtPayload } from '../../common/guards/jwt-auth.guard';
-import { PrismaService } from '../../database/prisma.service';
+import {
+  USER_REPOSITORY,
+  type IUserRepository,
+  type UserAggregate,
+} from '../users/application/interface/repository/user.repository.interface';
+import { toUserResponse } from '../users/users.mapper';
 import { normalizeEmail } from '../users/users.policy';
-import { toUserResponse, USER_SELECT } from '../users/users.select';
 import { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
@@ -23,7 +28,7 @@ const DUMMY_HASH_PROMISE = argon2.hash('geduc-rag-dummy-password');
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -34,10 +39,9 @@ export class AuthService {
    * existe.
    */
   async login(dto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.prisma.user.findFirst({
-      where: { email: normalizeEmail(dto.email), deletedAt: null },
-      select: { id: true, email: true, passwordHash: true, active: true },
-    });
+    const user = await this.users.findCredentialsByEmail(
+      normalizeEmail(dto.email),
+    );
     const valid = await argon2.verify(
       user?.passwordHash ?? (await DUMMY_HASH_PROMISE),
       dto.password,
@@ -51,10 +55,7 @@ export class AuthService {
         message: 'Conta desativada.',
       });
     }
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await this.users.touchLastLogin(user.id);
     return this.buildAuthResponse(user.id);
   }
 
@@ -73,10 +74,7 @@ export class AuthService {
         message: 'A confirmação de senha não confere.',
       });
     }
-    const user = await this.prisma.user.findFirst({
-      where: { id: userId, active: true, deletedAt: null },
-      select: { passwordHash: true },
-    });
+    const user = await this.users.findActiveCredentialsById(userId);
     if (!user) throw new UnauthorizedException('Sessão inválida.');
 
     if (!(await argon2.verify(user.passwordHash, dto.currentPassword))) {
@@ -85,31 +83,23 @@ export class AuthService {
         message: 'A senha atual está incorreta.',
       });
     }
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        passwordHash: await argon2.hash(dto.newPassword),
-        mustChangePassword: false,
-      },
+    await this.users.updatePassword(userId, {
+      passwordHash: await argon2.hash(dto.newPassword),
+      mustChangePassword: false,
     });
     return this.buildAuthResponse(userId);
   }
 
   /** Usuário da sessão (o front hidrata perfis, permissões e tenants). */
   async me(userId: string): Promise<AuthUserDto> {
-    const user = await this.prisma.user.findFirst({
-      where: { id: userId, active: true, deletedAt: null },
-      select: USER_SELECT,
-    });
+    const user = await this.users.findActiveById(userId);
     if (!user) throw new UnauthorizedException('Sessão inválida.');
     return toAuthUser(user);
   }
 
   private async buildAuthResponse(userId: string): Promise<AuthResponseDto> {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: USER_SELECT,
-    });
+    const user = await this.users.findById(userId);
+    if (!user) throw new UnauthorizedException('Sessão inválida.');
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -127,7 +117,7 @@ export class AuthService {
  * Montagem ÚNICA do usuário da sessão — login, troca de senha e `me` passam
  * por aqui, e a permissão vem da mesma projeção das respostas de usuário.
  */
-function toAuthUser(user: Parameters<typeof toUserResponse>[0]): AuthUserDto {
+function toAuthUser(user: UserAggregate): AuthUserDto {
   const view = toUserResponse(user);
   return {
     id: view.id,

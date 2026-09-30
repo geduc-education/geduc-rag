@@ -1,8 +1,8 @@
 #!/bin/bash
 # PreToolUse (Bash) — salvaguarda contra comandos destrutivos de banco.
 # Política: DELETE sem WHERE é negado; todo o resto destrutivo (DROP, TRUNCATE,
-# migrate reset, force-reset, dropdb, DELETE com WHERE) vira "ask" — o usuário
-# confirma manualmente, como manda o CLAUDE.md.
+# ALTER ... DROP, dropdb, DELETE com WHERE) vira "ask" — o usuário confirma
+# manualmente, como manda o CLAUDE.md.
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
@@ -28,9 +28,9 @@ if echo "$CMD_UPPER" | grep -Eq 'DELETE\s+FROM' && ! echo "$CMD_UPPER" | grep -q
   exit 2
 fi
 
-# Prisma/CLI destrutivos: reset, force-reset, perda de dados aceita, dropdb
-if echo "$CMD_UPPER" | grep -Eq 'MIGRATE\s+RESET|DB\s+PUSH\s.*--FORCE-RESET|--ACCEPT-DATA-LOSS|(^|[^A-Z])DROPDB([^A-Z]|$)'; then
-  ask "Comando destrutivo de banco (reset/força perda de dados). Regra do projeto: só com confirmação manual."
+# CLI destrutivo: dropdb
+if echo "$CMD_UPPER" | grep -Eq '(^|[^A-Z])DROPDB([^A-Z]|$)'; then
+  ask "Comando destrutivo de banco (dropdb). Regra do projeto: só com confirmação manual."
 fi
 
 # SQL destrutivo: DROP, TRUNCATE, ALTER ... DROP, DELETE (com WHERE)

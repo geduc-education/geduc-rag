@@ -3,9 +3,6 @@ node_modules
 dist
 coverage
 
-# Client do Prisma gerado por checkout (regenerado no build)
-generated/prisma
-
 # Segredos — nunca vão para a imagem (config é injetada em runtime)
 .env
 .env.*

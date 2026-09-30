@@ -28,7 +28,7 @@ frontend (pergunta)                 backend (consulta, síncrona)
 ## Backend
 
 Módulos NestJS em Clean Architecture (`backend/src/modules/{documents,ingestion,
-embedding,retrieval,generation,chat}`), persistência via Prisma/MySQL
+embedding,retrieval,generation,chat}`), persistência via mysql2 (SQL parametrizado)/MySQL
 (`RAG_STORAGE=mysql`, default) ou adapters in-memory (`RAG_STORAGE=memory`,
 usado no e2e e em dev sem banco). Providers reais: `EMBEDDING_PROVIDER=local`
 (transformers.js, `Xenova/multilingual-e5-small`) e `LLM_PROVIDER=ollama`

@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  type ITenantAccessRepository,
+  TENANT_ACCESS_REPOSITORY,
+} from './application/interface/repository/tenant-access.repository.interface';
 
 /**
  * Alcance de tenant do ator: SUPERADMIN enxerga todos (`tenantIds = null`);
@@ -13,32 +15,33 @@ export interface TenantReach {
 }
 
 /**
+ * Alcance passado aos repositórios: `'all'` = sem filtro (SUPERADMIN); lista
+ * vazia = nada visível.
+ */
+export type TenantScope = readonly string[] | 'all';
+
+export function scopeOf(reach: TenantReach): TenantScope {
+  return reach.tenantIds === null ? 'all' : reach.tenantIds;
+}
+
+/**
  * Fonte única do vínculo usuário ↔ tenant. O `TenantGuard` usa para liberar o
  * header `tenant-id`; os services de cadastro (users, tenants) usam para
  * restringir listagens e mutações ao alcance do ator.
  */
 @Injectable()
 export class TenantAccessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(TENANT_ACCESS_REPOSITORY)
+    private readonly repository: ITenantAccessRepository,
+  ) {}
 
   /** Alcance do ator; `null` quando o usuário não existe/está inativo. */
   async reachOf(userId: string): Promise<TenantReach | null> {
-    const user = await this.prisma.user.findFirst({
-      where: { id: userId, active: true, deletedAt: null },
-      select: {
-        isSuperAdmin: true,
-        tenants: {
-          where: { tenant: { deletedAt: null } },
-          select: { tenantId: true },
-        },
-      },
-    });
-    if (!user) return null;
-    if (user.isSuperAdmin) return { superAdmin: true, tenantIds: null };
-    return {
-      superAdmin: false,
-      tenantIds: user.tenants.map((link) => link.tenantId),
-    };
+    const links = await this.repository.findActiveUserTenants(userId);
+    if (!links) return null;
+    if (links.isSuperAdmin) return { superAdmin: true, tenantIds: null };
+    return { superAdmin: false, tenantIds: links.tenantIds };
   }
 
   /**
@@ -47,19 +50,9 @@ export class TenantAccessService {
    * fora do alcance respondem igual — o chamador não distingue os dois.
    */
   async canAccess(userId: string, tenantId: string): Promise<boolean> {
-    const tenant = await this.prisma.tenant.findFirst({
-      where: { id: tenantId, active: true, deletedAt: null },
-      select: { id: true },
-    });
-    if (!tenant) return false;
+    if (!(await this.repository.isTenantActive(tenantId))) return false;
     const reach = await this.reachOf(userId);
     if (!reach) return false;
     return reach.tenantIds === null || reach.tenantIds.includes(tenantId);
-  }
-
-  /** Filtro de tenant para listagens escopadas (`undefined` = sem filtro). */
-  tenantWhere(reach: TenantReach): Prisma.TenantWhereInput | undefined {
-    if (reach.tenantIds === null) return undefined;
-    return { id: { in: reach.tenantIds } };
   }
 }

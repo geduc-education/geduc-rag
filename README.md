@@ -4,7 +4,7 @@ Plataforma de RAG (Retrieval-Augmented Generation) multi-tenant: base de
 conhecimento por tenant (documentos → chunks → embeddings) e assistente que
 responde com citações. Identidade própria, RBAC N:N e vínculo usuário ↔ tenant.
 
-Stack: **Backend** NestJS 11 + TypeScript + Prisma 7 + MySQL ·
+Stack: **Backend** NestJS 11 + TypeScript + mysql2 (SQL parametrizado) + MySQL ·
 **Frontend** Flutter Web (FVM) + flutter_modular + Dio.
 
 Monorepo no mesmo padrão do `geduc-suporte`. O pipeline de RAG veio do
@@ -14,7 +14,7 @@ Monorepo no mesmo padrão do `geduc-suporte`. O pipeline de RAG veio do
 
 ```text
 geduc-rag/
-  backend/    ← NestJS + TypeScript + Prisma + MySQL (+ pipeline RAG)
+  backend/    ← NestJS + TypeScript + mysql2 + MySQL (+ pipeline RAG)
   frontend/   ← Flutter Web + flutter_modular + Dio
   infra/      ← docker-compose do MySQL de desenvolvimento
   .claude/    ← agents, hooks e configuração
@@ -34,8 +34,8 @@ docker compose -f infra/db/docker-compose.yml up -d   # MySQL 8.4 na 3307
 ```bash
 cd backend
 cp .env.example .env        # DATABASE_URL já aponta para o compose acima
-npm install                 # roda `prisma generate` no postinstall
-npx prisma migrate deploy   # aplica a migration inicial
+npm install
+npm run db:migrate          # aplica backend/database/migrations/*.sql
 npm run db:seed             # permissões, perfis, tenant "geduc" e SUPERADMIN
 npm run start:dev           # http://localhost:3000 · Swagger em /docs
 ```

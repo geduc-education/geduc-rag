@@ -3,58 +3,73 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { DATABASE_CONNECTION } from '../src/@core/application/adapters/database-connection.interface';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/filters';
 import { buildValidationException } from '../src/common/pipes';
+import {
+  IEffectivePermissionsRepository,
+  UserGrants,
+} from '../src/common/rbac/application/interface/repository/effective-permissions.repository.interface';
 import { PERMISSIONS } from '../src/common/rbac/permissions';
-import { PrismaService } from '../src/database/prisma.service';
+import {
+  ITenantAccessRepository,
+  UserTenantLinks,
+} from '../src/common/tenancy/application/interface/repository/tenant-access.repository.interface';
 import { GithubPullsClient } from '../src/modules/changelog/github-pulls.client';
 
 const TENANT = '7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11';
 const OTHER_TENANT = '9e1c1b63-3e1b-4b7c-8b6f-3c2e0b2d4f22';
 
 /**
- * Prisma em memória, só com o que os guards globais consultam: o mesmo
- * usuário atende o `EffectivePermissionsService` (perfis) e o
- * `TenantAccessService` (vínculos). Prova o WIRING — ordem dos guards, DI dos
- * módulos RAG e o fluxo documento → chat — sem MySQL.
+ * Repositórios do núcleo de autorização em memória: o mesmo usuário atende o
+ * `EffectivePermissionsService` (perfis) e o `TenantAccessService` (vínculos).
+ * Prova o WIRING — ordem dos guards, DI dos módulos RAG e o fluxo documento →
+ * chat — sem MySQL.
  */
-const prismaStub = {
-  $connect: () => Promise.resolve(),
-  $disconnect: () => Promise.resolve(),
-  user: {
-    findFirst: () =>
-      Promise.resolve({
-        isSuperAdmin: false,
-        profiles: [
-          {
-            profile: {
-              permissions: [
-                PERMISSIONS.DOCUMENT_READ,
-                PERMISSIONS.DOCUMENT_MANAGE,
-                PERMISSIONS.CHAT_QUERY,
-              ].map((key) => ({ permission: { key } })),
-            },
-          },
-        ],
-        tenants: [{ tenantId: TENANT }],
-      }),
-  },
-  tenant: {
-    findFirst: ({ where }: { where: { id: string } }) =>
-      Promise.resolve(where.id === TENANT ? { id: TENANT } : null),
-  },
+const effectivePermissionsStub: IEffectivePermissionsRepository = {
+  findActiveUserGrants: (): Promise<UserGrants> =>
+    Promise.resolve({
+      isSuperAdmin: false,
+      permissionKeys: [
+        PERMISSIONS.DOCUMENT_READ,
+        PERMISSIONS.DOCUMENT_MANAGE,
+        PERMISSIONS.CHAT_QUERY,
+      ],
+    }),
 };
 
-describe('App (e2e, Prisma stubado)', () => {
+const tenantAccessStub: ITenantAccessRepository = {
+  findActiveUserTenants: (): Promise<UserTenantLinks> =>
+    Promise.resolve({ isSuperAdmin: false, tenantIds: [TENANT] }),
+  isTenantActive: (tenantId: string) => Promise.resolve(tenantId === TENANT),
+};
+
+/** Nenhum caminho do e2e pode chegar ao banco: qualquer chamada rejeita. */
+const rejectDatabase = (): Promise<never> =>
+  Promise.reject(new Error('e2e sem banco: DATABASE_CONNECTION stubado'));
+const databaseStub = {
+  query: rejectDatabase,
+  queryOne: rejectDatabase,
+  insert: rejectDatabase,
+  update: rejectDatabase,
+  delete: rejectDatabase,
+  runInTransaction: rejectDatabase,
+};
+
+describe('App (e2e, banco stubado)', () => {
   let app: INestApplication<App>;
   let token: string;
   const githubClient = { listMergedPulls: jest.fn() };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideProvider(PrismaService)
-      .useValue(prismaStub)
+      .overrideProvider(DATABASE_CONNECTION)
+      .useValue(databaseStub)
+      .overrideProvider('IEffectivePermissionsRepository')
+      .useValue(effectivePermissionsStub)
+      .overrideProvider('ITenantAccessRepository')
+      .useValue(tenantAccessStub)
       .overrideProvider(GithubPullsClient)
       .useValue(githubClient)
       .compile();

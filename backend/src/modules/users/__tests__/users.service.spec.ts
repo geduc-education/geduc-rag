@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -12,7 +13,15 @@ import {
   TenantAccessService,
   TenantReach,
 } from '../../../common/tenancy/tenant-access.service';
-import { PrismaService } from '../../../database/prisma.service';
+import type {
+  IProfileRepository,
+  ProfileWithPermissions,
+} from '../../profiles/application/interface/repository/profile.repository.interface';
+import type { ITenantRepository } from '../../tenants/application/interface/repository/tenant.repository.interface';
+import type {
+  IUserRepository,
+  UserAggregate,
+} from '../application/interface/repository/user.repository.interface';
 import { UsersService } from '../users.service';
 
 jest.mock('argon2', () => ({ hash: jest.fn(() => Promise.resolve('hash')) }));
@@ -21,8 +30,7 @@ const TENANT_A = '11111111-1111-4111-8111-111111111111';
 const TENANT_B = '22222222-2222-4222-8222-222222222222';
 const PROFILE = '33333333-3333-4333-8333-333333333333';
 
-/** Linha no formato do USER_SELECT. */
-function userRow(overrides: Partial<Record<string, unknown>> = {}) {
+function aggregate(overrides: Partial<UserAggregate> = {}): UserAggregate {
   return {
     id: 'u2',
     name: 'Maria',
@@ -34,36 +42,80 @@ function userRow(overrides: Partial<Record<string, unknown>> = {}) {
     createdAt: new Date(0),
     updatedAt: new Date(0),
     profiles: [],
-    tenants: [{ tenant: { id: TENANT_A, name: 'A', slug: 'a' } }],
+    tenants: [{ id: TENANT_A, name: 'A', slug: 'a' }],
+    permissionKeys: [],
     ...overrides,
   };
 }
 
-function makePrisma() {
+function makeUsers() {
   return {
-    user: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-    },
-    profile: { findMany: jest.fn() },
-    tenant: { count: jest.fn() },
-    userTenant: { deleteMany: jest.fn(), createMany: jest.fn() },
-    $transaction: jest.fn(),
-  };
+    list: jest.fn(),
+    findInScope: jest.fn(),
+    findActiveById: jest.fn(),
+    findById: jest.fn(),
+    findCredentialsByEmail: jest.fn(),
+    findActiveCredentialsById: jest.fn(),
+    findIdByEmail: jest.fn<Promise<string | null>, [string]>(() =>
+      Promise.resolve(null),
+    ),
+    create: jest.fn(),
+    update: jest.fn(),
+    replaceTenants: jest.fn(),
+    updatePassword: jest.fn(),
+    touchLastLogin: jest.fn(),
+    softDelete: jest.fn(),
+  } satisfies Record<keyof IUserRepository, jest.Mock>;
+}
+
+function makeProfiles() {
+  return {
+    listActive: jest.fn(),
+    findActiveByIds: jest.fn<
+      Promise<ProfileWithPermissions[]>,
+      [readonly string[]]
+    >(() => Promise.resolve([])),
+  } satisfies Record<keyof IProfileRepository, jest.Mock>;
+}
+
+function makeTenants() {
+  return {
+    list: jest.fn(),
+    findById: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    countExisting: jest.fn((ids: readonly string[]) =>
+      Promise.resolve(ids.length),
+    ),
+  } satisfies Record<keyof ITenantRepository, jest.Mock>;
+}
+
+function codeOf(error: unknown): string | undefined {
+  if (!(error instanceof HttpException)) return undefined;
+  return (error.getResponse() as { code?: string }).code;
+}
+
+async function rejection(promise: Promise<unknown>): Promise<unknown> {
+  try {
+    await promise;
+  } catch (error) {
+    return error;
+  }
+  throw new Error('esperava rejeição');
 }
 
 describe('UsersService', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let users: ReturnType<typeof makeUsers>;
+  let profiles: ReturnType<typeof makeProfiles>;
+  let tenants: ReturnType<typeof makeTenants>;
   let reach: TenantReach;
   let permissionKeys: string[];
   let service: UsersService;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    users = makeUsers();
+    profiles = makeProfiles();
+    tenants = makeTenants();
     reach = { superAdmin: false, tenantIds: [TENANT_A] };
     permissionKeys = ['user:read', 'user:manage'];
     const tenantAccess = {
@@ -77,7 +129,9 @@ describe('UsersService', () => {
       ),
     } as unknown as EffectivePermissionsService;
     service = new UsersService(
-      prisma as unknown as PrismaService,
+      users,
+      profiles,
+      tenants,
       permissions,
       tenantAccess,
     );
@@ -89,60 +143,144 @@ describe('UsersService', () => {
     password: 'Senha!123',
   };
 
+  describe('list', () => {
+    it('passa o alcance do ator e a paginação padrão ao repositório', async () => {
+      users.list.mockResolvedValue({ data: [aggregate()], total: 1 });
+
+      const result = await service.list({}, 'actor');
+
+      expect(users.list).toHaveBeenCalledWith(
+        expect.objectContaining({ scope: [TENANT_A], page: 1, limit: 20 }),
+      );
+      expect(result.total).toBe(1);
+      expect(result.data[0]).not.toHaveProperty('passwordHash');
+    });
+
+    it('SUPERADMIN lista com escopo "all" e repassa os filtros', async () => {
+      reach = { superAdmin: true, tenantIds: null };
+      users.list.mockResolvedValue({ data: [], total: 0 });
+
+      await service.list(
+        { active: true, tenantId: TENANT_B, search: 'ma', page: 2, limit: 5 },
+        'actor',
+      );
+
+      expect(users.list).toHaveBeenCalledWith({
+        scope: 'all',
+        active: true,
+        tenantId: TENANT_B,
+        search: 'ma',
+        page: 2,
+        limit: 5,
+      });
+    });
+  });
+
   describe('create', () => {
     it('exige tenant para quem não é SUPERADMIN', async () => {
       await expect(service.create(baseCreate, 'actor')).rejects.toBeInstanceOf(
         BadRequestException,
       );
-      expect(prisma.user.create).not.toHaveBeenCalled();
+      expect(users.create).not.toHaveBeenCalled();
     });
 
-    it('nega tenant fora do alcance do ator', async () => {
-      await expect(
+    it('nega tenant fora do alcance do ator (TENANT_NOT_GRANTABLE)', async () => {
+      const error = await rejection(
         service.create({ ...baseCreate, tenantIds: [TENANT_B] }, 'actor'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-      expect(prisma.user.create).not.toHaveBeenCalled();
+      );
+      expect(error).toBeInstanceOf(ForbiddenException);
+      expect(codeOf(error)).toBe('TENANT_NOT_GRANTABLE');
+      expect(users.create).not.toHaveBeenCalled();
     });
 
-    it('nega perfil com permissão que o ator não tem', async () => {
-      prisma.tenant.count.mockResolvedValue(1);
-      prisma.profile.findMany.mockResolvedValue([
-        { permissions: [{ permission: { key: 'tenant:manage' } }] },
+    it('400 TENANT_NOT_FOUND quando algum tenant não existe', async () => {
+      tenants.countExisting.mockResolvedValue(0);
+      const error = await rejection(
+        service.create({ ...baseCreate, tenantIds: [TENANT_A] }, 'actor'),
+      );
+      expect(codeOf(error)).toBe('TENANT_NOT_FOUND');
+      expect(tenants.countExisting).toHaveBeenCalledWith([TENANT_A]);
+      expect(users.create).not.toHaveBeenCalled();
+    });
+
+    it('nega perfil com permissão que o ator não tem, sem escrita', async () => {
+      profiles.findActiveByIds.mockResolvedValue([
+        {
+          id: PROFILE,
+          name: 'Gestor',
+          description: null,
+          system: false,
+          permissionKeys: ['tenant:manage'],
+        },
       ]);
-      await expect(
+      const error = await rejection(
         service.create(
           { ...baseCreate, tenantIds: [TENANT_A], profileIds: [PROFILE] },
           'actor',
         ),
-      ).rejects.toBeInstanceOf(ForbiddenException);
+      );
+      expect(error).toBeInstanceOf(ForbiddenException);
+      expect(codeOf(error)).toBe('PERMISSION_NOT_GRANTABLE');
+      expect(profiles.findActiveByIds).toHaveBeenCalledWith([PROFILE]);
+      expect(users.create).not.toHaveBeenCalled();
+    });
+
+    it('400 PROFILE_NOT_FOUND quando o perfil não existe ou está inativo', async () => {
+      const error = await rejection(
+        service.create(
+          { ...baseCreate, tenantIds: [TENANT_A], profileIds: [PROFILE] },
+          'actor',
+        ),
+      );
+      expect(codeOf(error)).toBe('PROFILE_NOT_FOUND');
+      expect(users.create).not.toHaveBeenCalled();
     });
 
     it('409 neutro quando o e-mail já existe', async () => {
-      prisma.tenant.count.mockResolvedValue(1);
-      prisma.user.findUnique.mockResolvedValue({ id: 'outro' });
-      await expect(
+      users.findIdByEmail.mockResolvedValue('outro');
+      const error = await rejection(
         service.create({ ...baseCreate, tenantIds: [TENANT_A] }, 'actor'),
-      ).rejects.toBeInstanceOf(ConflictException);
+      );
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(codeOf(error)).toBe('EMAIL_UNAVAILABLE');
+      expect(users.findIdByEmail).toHaveBeenCalledWith('maria@empresa.com');
+      expect(users.create).not.toHaveBeenCalled();
     });
 
-    it('cria com e-mail normalizado, troca de senha obrigatória e vínculos', async () => {
-      prisma.tenant.count.mockResolvedValue(1);
-      prisma.user.findUnique.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue(userRow());
+    it('409 EMAIL_UNAVAILABLE quando o unique do banco decide a corrida', async () => {
+      users.create.mockRejectedValue({ code: 'ER_DUP_ENTRY', errno: 1062 });
+      const error = await rejection(
+        service.create({ ...baseCreate, tenantIds: [TENANT_A] }, 'actor'),
+      );
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(codeOf(error)).toBe('EMAIL_UNAVAILABLE');
+    });
+
+    it('propaga erro de banco que não é de duplicidade', async () => {
+      const boom = new Error('boom');
+      users.create.mockRejectedValue(boom);
+      await expect(
+        service.create({ ...baseCreate, tenantIds: [TENANT_A] }, 'actor'),
+      ).rejects.toBe(boom);
+    });
+
+    it('cria com e-mail normalizado e vínculos, e devolve a projeção', async () => {
+      users.create.mockResolvedValue('u2');
+      users.findById.mockResolvedValue(aggregate());
 
       const result = await service.create(
         { ...baseCreate, tenantIds: [TENANT_A] },
         'actor',
       );
 
-      const [[args]] = prisma.user.create.mock.calls as [
-        [{ data: Record<string, unknown> }],
-      ];
-      expect(args.data).toMatchObject({
+      expect(users.create).toHaveBeenCalledWith({
+        name: 'Maria',
         email: 'maria@empresa.com',
         passwordHash: 'hash',
-        mustChangePassword: true,
-        tenants: { create: [{ tenantId: TENANT_A }] },
+        active: true,
+        createdById: 'actor',
+        profileIds: [],
+        tenantIds: [TENANT_A],
       });
       expect(result).not.toHaveProperty('passwordHash');
       expect(result.tenants).toEqual([{ id: TENANT_A, name: 'A', slug: 'a' }]);
@@ -151,72 +289,122 @@ describe('UsersService', () => {
 
   describe('alcance', () => {
     it('404 para usuário fora do alcance (sem tenant em comum)', async () => {
-      prisma.user.findFirst.mockResolvedValue(null);
-      await expect(service.findOne('u9', 'actor')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
-      expect(prisma.user.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            AND: [
-              { id: 'u9', deletedAt: null },
-              { tenants: { some: { tenantId: { in: [TENANT_A] } } } },
-            ],
-          },
-        }),
-      );
+      users.findInScope.mockResolvedValue(null);
+      const error = await rejection(service.findOne('u9', 'actor'));
+      expect(error).toBeInstanceOf(NotFoundException);
+      expect(codeOf(error)).toBe('USER_NOT_FOUND');
+      expect(users.findInScope).toHaveBeenCalledWith('u9', [TENANT_A]);
     });
   });
 
   describe('update / remove', () => {
-    it('administrador comum não altera o SUPERADMIN', async () => {
-      prisma.user.findFirst.mockResolvedValue(userRow({ isSuperAdmin: true }));
-      await expect(
+    it('administrador comum não altera o SUPERADMIN (USER_PROTECTED)', async () => {
+      users.findInScope.mockResolvedValue(aggregate({ isSuperAdmin: true }));
+      const error = await rejection(
         service.update('u2', { name: 'X' }, 'actor'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      );
+      expect(codeOf(error)).toBe('USER_PROTECTED');
+      expect(users.update).not.toHaveBeenCalled();
+    });
+
+    it('troca perfis conferindo só os que entram ou saem', async () => {
+      users.findInScope.mockResolvedValue(
+        aggregate({ profiles: [{ id: 'p-old', name: 'Antigo' }] }),
+      );
+      profiles.findActiveByIds.mockResolvedValue([
+        {
+          id: PROFILE,
+          name: 'Leitor',
+          description: null,
+          system: false,
+          permissionKeys: ['user:read'],
+        },
+        {
+          id: 'p-old',
+          name: 'Antigo',
+          description: null,
+          system: false,
+          permissionKeys: [],
+        },
+      ]);
+
+      await service.update(
+        'u2',
+        { name: ' Maria ', profileIds: [PROFILE] },
+        'actor',
+      );
+
+      expect(profiles.findActiveByIds).toHaveBeenCalledWith([PROFILE, 'p-old']);
+      expect(users.update).toHaveBeenCalledWith('u2', {
+        name: 'Maria',
+        email: undefined,
+        active: undefined,
+        updatedById: 'actor',
+        profileIds: [PROFILE],
+      });
+    });
+
+    it('409 EMAIL_UNAVAILABLE na corrida do update', async () => {
+      users.findInScope.mockResolvedValue(aggregate());
+      users.update.mockRejectedValue({ code: 'ER_DUP_ENTRY', errno: 1062 });
+      const error = await rejection(
+        service.update('u2', { email: 'novo@empresa.com' }, 'actor'),
+      );
+      expect(codeOf(error)).toBe('EMAIL_UNAVAILABLE');
     });
 
     it('ninguém exclui a si mesmo', async () => {
-      prisma.user.findFirst.mockResolvedValue(userRow({ id: 'actor' }));
-      await expect(service.remove('actor', 'actor')).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
-      expect(prisma.user.update).not.toHaveBeenCalled();
+      users.findInScope.mockResolvedValue(aggregate({ id: 'actor' }));
+      const error = await rejection(service.remove('actor', 'actor'));
+      expect(codeOf(error)).toBe('USER_SELF_ACTION');
+      expect(users.softDelete).not.toHaveBeenCalled();
     });
 
-    it('exclusão é lógica (deletedAt + inativa)', async () => {
-      prisma.user.findFirst.mockResolvedValue(userRow());
+    it('exclusão é lógica', async () => {
+      users.findInScope.mockResolvedValue(aggregate());
       await service.remove('u2', 'actor');
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 'u2' },
-        data: expect.objectContaining({
-          active: false,
-          deletedById: 'actor',
-          deletedAt: expect.any(Date) as Date,
-        }) as object,
-      });
+      expect(users.softDelete).toHaveBeenCalledWith('u2', 'actor');
+    });
+  });
+
+  describe('assignTenants', () => {
+    it('preserva vínculos fora do alcance e grava o conjunto final', async () => {
+      users.findInScope.mockResolvedValue(
+        aggregate({
+          tenants: [
+            { id: TENANT_A, name: 'A', slug: 'a' },
+            { id: TENANT_B, name: 'B', slug: 'b' },
+          ],
+        }),
+      );
+
+      await service.assignTenants('u2', { tenantIds: [TENANT_A] }, 'actor');
+
+      expect(users.replaceTenants).toHaveBeenCalledWith(
+        'u2',
+        [TENANT_A, TENANT_B],
+        'actor',
+      );
     });
   });
 
   describe('resetPassword', () => {
     it('409 para usuário inativo', async () => {
-      prisma.user.findFirst.mockResolvedValue(userRow({ active: false }));
-      await expect(
+      users.findInScope.mockResolvedValue(aggregate({ active: false }));
+      const error = await rejection(
         service.resetPassword('u2', { password: 'Nova!1234' }, 'actor'),
-      ).rejects.toBeInstanceOf(ConflictException);
+      );
+      expect(codeOf(error)).toBe('USER_INACTIVE');
+      expect(users.updatePassword).not.toHaveBeenCalled();
     });
 
     it('grava a nova senha e religa a troca obrigatória', async () => {
-      prisma.user.findFirst.mockResolvedValue(userRow());
+      users.findInScope.mockResolvedValue(aggregate());
       await service.resetPassword('u2', { password: 'Nova!1234' }, 'actor');
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 'u2' },
-        data: {
-          passwordHash: 'hash',
-          mustChangePassword: true,
-          updatedById: 'actor',
-        },
+      expect(users.updatePassword).toHaveBeenCalledWith('u2', {
+        passwordHash: 'hash',
+        mustChangePassword: true,
+        updatedById: 'actor',
       });
     });
   });

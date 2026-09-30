@@ -36,7 +36,7 @@ export class EnvironmentVariables {
   @IsString()
   PORT?: string;
 
-  // Teto do pool do driver `mariadb` por instância (PrismaMariaDb). Inteiro ≥ 1.
+  // Teto do pool do mysql2 por instância. Inteiro ≥ 1.
   @IsOptional()
   @Matches(/^[1-9]\d*$/, {
     message: 'DB_POOL_MAX deve ser um inteiro maior ou igual a 1',
@@ -163,7 +163,7 @@ export class EnvironmentVariables {
   RERANK_ENABLED: boolean = false;
 
   // --- Persistência e upload ----------------------------------------------
-  // `mysql` usa os repositórios Prisma; `memory` mantém os adapters in-memory.
+  // `mysql` usa os repositórios SQL (mysql2); `memory` mantém os adapters in-memory.
   @IsIn(['mysql', 'memory'])
   RAG_STORAGE: string = 'mysql';
 

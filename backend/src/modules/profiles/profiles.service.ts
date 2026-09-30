@@ -1,30 +1,26 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  PROFILE_REPOSITORY,
+  type IProfileRepository,
+} from './application/interface/repository/profile.repository.interface';
 import { ProfileResponseDto } from './dto/profile-response.dto';
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PROFILE_REPOSITORY)
+    private readonly profiles: IProfileRepository,
+  ) {}
 
   /** Perfis ativos, com as chaves de permissão (para o form de usuário). */
   async list(): Promise<ProfileResponseDto[]> {
-    const profiles = await this.prisma.profile.findMany({
-      where: { active: true, deletedAt: null },
-      orderBy: { name: 'asc' },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        system: true,
-        permissions: { select: { permission: { select: { key: true } } } },
-      },
-    });
+    const profiles = await this.profiles.listActive();
     return profiles.map((profile) => ({
       id: profile.id,
       name: profile.name,
       description: profile.description,
       system: profile.system,
-      permissions: profile.permissions.map((g) => g.permission.key).sort(),
+      permissions: profile.permissionKeys,
     }));
   }
 }

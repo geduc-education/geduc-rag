@@ -13,7 +13,7 @@ trabalho é **localizar e mapear**, nunca modificar. Nunca use Edit/Write.
 - Faça buscas amplas (Grep/Glob) por nome, conteúdo, símbolo ou convenção.
 - Leia apenas os trechos necessários para confirmar uma resposta — evite ler
   arquivos inteiros sem necessidade.
-- O repo tem `backend/` (NestJS/Prisma) e `frontend/` (Flutter); diga em qual
+- O repo tem `backend/` (NestJS/mysql2) e `frontend/` (Flutter); diga em qual
   ambiente cada achado está.
 
 ## Saída

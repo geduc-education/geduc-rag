@@ -8,7 +8,7 @@ import { GetDocumentContentUseCase } from './application/usecase/document/get-do
 import { UpdateDocumentStatusUseCase } from './application/usecase/document/update-document-status.usecase';
 
 /**
- * Dono da tabela de documentos (Prisma, ou in-memory com `RAG_STORAGE=memory`). `GetDocumentContentUseCase` e
+ * Dono da tabela de documentos (MySQL via SQL parametrizado, ou in-memory com `RAG_STORAGE=memory`). `GetDocumentContentUseCase` e
  * `UpdateDocumentStatusUseCase` são exportados para o `ingestion` consumir via gateway
  * PRÓPRIO do `ingestion` (regra de fronteira cross-module) — este módulo nunca importa
  * nada de `ingestion`.

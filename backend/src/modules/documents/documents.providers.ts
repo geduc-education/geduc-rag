@@ -9,9 +9,12 @@ import {
   IDocumentVectorsGateway,
 } from './application/interface/gateways/document-vectors.gateway.interface';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../database/prisma.service';
+import {
+  DATABASE_CONNECTION,
+  IDatabaseConnection,
+} from '../../@core/application/adapters/database-connection.interface';
 import { InMemoryDocumentRepository } from './infra/database/repositories/in-memory-document.repository';
-import { PrismaDocumentRepository } from './infra/database/repositories/prisma-document.repository';
+import { DocumentRepository } from './infra/database/repositories/document.repository';
 import { IngestionQueueGateway } from './infra/gateways/ingestion-queue.gateway';
 import { TextExtractorGateway } from './infra/gateways/text-extractor.gateway';
 import { DocumentVectorsGateway } from './infra/gateways/document-vectors.gateway';
@@ -29,12 +32,12 @@ export namespace DOCUMENTS_PROVIDERS {
       provide: 'IDocumentRepository',
       useFactory: (
         config: ConfigService,
-        prisma: PrismaService,
+        connection: IDatabaseConnection,
       ): IDocumentRepository =>
         config.get<string>('RAG_STORAGE') === 'memory'
           ? new InMemoryDocumentRepository()
-          : new PrismaDocumentRepository(prisma),
-      inject: [ConfigService, PrismaService],
+          : new DocumentRepository(connection),
+      inject: [ConfigService, DATABASE_CONNECTION],
     };
   }
 

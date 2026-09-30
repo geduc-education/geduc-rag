@@ -10,7 +10,6 @@ import {
   mergeTenantAssignment,
   normalizeEmail,
   UserActor,
-  userScopeWhere,
 } from '../users.policy';
 
 const SUPER: TenantReach = { superAdmin: true, tenantIds: null };
@@ -35,18 +34,6 @@ function errorCode(fn: () => void): string | undefined {
 }
 
 describe('users.policy', () => {
-  describe('userScopeWhere', () => {
-    it('SUPERADMIN não filtra', () => {
-      expect(userScopeWhere(SUPER)).toEqual({});
-    });
-
-    it('demais: só usuários com tenant em comum', () => {
-      expect(userScopeWhere(ADMIN_A)).toEqual({
-        tenants: { some: { tenantId: { in: ['A'] } } },
-      });
-    });
-  });
-
   it('changedIds devolve o que entra e o que sai', () => {
     expect(changedIds(['A', 'B'], ['B', 'C']).sort()).toEqual(['A', 'C']);
   });

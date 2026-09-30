@@ -5,7 +5,7 @@
 | Tema | Decisão |
 |---|---|
 | Nome do monorepo | `geduc-rag` |
-| Arquitetura backend | Híbrida: plataforma no padrão geduc-suporte (Controller → Service → Prisma); RAG mantém a Clean Architecture do rag-api |
+| Arquitetura backend | Híbrida: plataforma no padrão geduc-suporte (Controller → Service → repositório SQL); RAG mantém a Clean Architecture do rag-api |
 | Autenticação | Própria (argon2 + JWT HS256), independente do geduc-api |
 | Multi-tenant | Tenant simples: `Tenant` + `UserTenant` N:N; header `tenant-id` validado contra o vínculo; perfis globais |
 

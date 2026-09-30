@@ -2,7 +2,7 @@ export interface VectorStoreRecord {
   chunkId: string;
   documentId: string;
   tenantId: string;
-  /** Usado só pelo adapter in-memory; o adapter Prisma resolve o filename via join com `document`. */
+  /** Usado só pelo adapter in-memory; o adapter MySQL resolve o filename via join com `document`. */
   filename: string;
   chunkIndex: number;
   content: string;

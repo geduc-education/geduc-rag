@@ -1,7 +1,7 @@
 name: geduc-rag-db
 
 # MySQL de DESENVOLVIMENTO do geduc-rag. Vetores do RAG ficam aqui mesmo:
-# `document_chunk.embedding` é um `Bytes @db.Blob` (Float32 little-endian) e a
+# `document_chunk.embedding` é um `BLOB` (Float32 little-endian) e a
 # busca por similaridade é uma varredura linear filtrada por tenant/dimensões
 # (ver `.docs/rag-architecture.md`), sem índice vetorial nativo. Um vector
 # store externo (Qdrant/Pinecone...) fica para quando o volume exigir.

@@ -11,6 +11,12 @@ abstract final class AppPermissions {
   static const String tenantRead = 'tenant:read';
   static const String tenantManage = 'tenant:manage';
 
+  static const String employeeRead = 'employee:read';
+  static const String employeeManage = 'employee:manage';
+
+  /// Exclusão DEFINITIVA (hard delete) de funcionário — separada do manage.
+  static const String employeePurge = 'employee:purge';
+
   static const String documentRead = 'document:read';
   static const String documentManage = 'document:manage';
   static const String chatQuery = 'chat:query';

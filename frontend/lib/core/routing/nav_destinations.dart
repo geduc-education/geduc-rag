@@ -5,7 +5,7 @@ import '../auth/app_permissions.dart';
 /// Seção de agrupamento do menu lateral. Puramente de apresentação — a
 /// visibilidade de cada item é decidida pelas permissões.
 enum NavGroup {
-  /// Gestão da plataforma (Usuários, e em seguida Tenants/Perfis).
+  /// Gestão da plataforma (Usuários, Funcionários e, em seguida, Tenants).
   administracao,
 
   /// Assistente RAG (Documentos e Chat), escopado pelo tenant ativo.
@@ -59,6 +59,14 @@ const List<NavDestination> navDestinations = <NavDestination>[
     route: '/home/users',
     requiredPermissions: <String>[AppPermissions.userRead],
     description: 'Equipe e acessos',
+    group: NavGroup.administracao,
+  ),
+  NavDestination(
+    label: 'Funcionários',
+    icon: Icons.badge_outlined,
+    route: '/home/employees',
+    requiredPermissions: <String>[AppPermissions.employeeRead],
+    description: 'Cadastro do tenant',
     group: NavGroup.administracao,
   ),
   NavDestination(

@@ -5,6 +5,7 @@ import '../../core/storage/local_preferences.dart';
 import '../auth/guards/auth_guard.dart';
 import '../auth/guards/must_change_password_guard.dart';
 import '../changelog/changelog_module.dart';
+import '../employees/employees_module.dart';
 import '../rag_assistant/rag_assistant_module.dart';
 import '../users/users_module.dart';
 import 'presentation/dashboard_page.dart';
@@ -30,6 +31,7 @@ final homeModule = createModule(
       ),
     );
     registerUsersBinds(c);
+    registerEmployeesBinds(c);
     registerRagAssistantBinds(c);
     registerChangelogBinds(c);
     c.route(
@@ -39,6 +41,7 @@ final homeModule = createModule(
       children: (r) {
         r.route('/dashboard', child: (_, _) => const DashboardPage());
         registerUsersRoutes(r);
+        registerEmployeesRoutes(r);
         registerRagAssistantRoutes(r);
         registerChangelogRoutes(r);
       },

@@ -32,6 +32,10 @@ const SOFT_DELETE_SQL = `
      SET active = 0, deleted_at = NOW(3), deleted_by_id = ?, updated_at = NOW(3)
    WHERE tenant_id = ? AND id = ? AND deleted_at IS NULL`;
 
+const HARD_DELETE_SQL = `
+  DELETE FROM employee
+   WHERE tenant_id = ? AND id = ?`;
+
 /** Colunas dos lookups de unicidade (allow-list; nunca vêm de input). */
 const UNIQUE_LOOKUP_COLUMNS = {
   email: 'email',
@@ -171,6 +175,11 @@ export class EmployeeRepository implements IEmployeeRepository {
     deletedById: string,
   ): Promise<void> {
     await this.db.update(SOFT_DELETE_SQL, [deletedById, tenantId, id]);
+  }
+
+  async hardDelete(tenantId: string, id: string): Promise<boolean> {
+    const result = await this.db.delete(HARD_DELETE_SQL, [tenantId, id]);
+    return result.affectedRows > 0;
   }
 
   /** Não filtra exclusão: os uniques do tenant também valem para excluídos. */

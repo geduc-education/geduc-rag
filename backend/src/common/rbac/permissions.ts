@@ -19,6 +19,11 @@ export const PERMISSIONS = {
   TENANT_READ: 'tenant:read',
   TENANT_MANAGE: 'tenant:manage',
 
+  // --- Funcionários -------------------------------------------------------
+  EMPLOYEE_READ: 'employee:read',
+  EMPLOYEE_MANAGE: 'employee:manage',
+  EMPLOYEE_PURGE: 'employee:purge',
+
   // --- RAG ----------------------------------------------------------------
   DOCUMENT_READ: 'document:read',
   DOCUMENT_MANAGE: 'document:manage',
@@ -34,6 +39,9 @@ export const PERMISSION_DESCRIPTIONS: Record<PermissionKey, string> = {
   'profile:read': 'Listar perfis e suas permissões',
   'tenant:read': 'Listar e visualizar tenants',
   'tenant:manage': 'Criar e editar tenants',
+  'employee:read': 'Listar e visualizar funcionários do tenant',
+  'employee:manage': 'Criar, editar e excluir funcionários do tenant',
+  'employee:purge': 'Excluir funcionários do tenant definitivamente',
   'document:read': 'Consultar documentos e o status da ingestão',
   'document:manage': 'Enviar documentos para a base de conhecimento',
   'chat:query': 'Fazer perguntas ao assistente (RAG)',

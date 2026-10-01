@@ -69,4 +69,9 @@ export interface IEmployeeRepository {
     input: UpdateEmployeeInput,
   ): Promise<EmployeeRecord>;
   softDelete(tenantId: string, id: string, deletedById: string): Promise<void>;
+  /**
+   * Remove a linha de vez, excluída logicamente ou não. `false` quando não
+   * havia funcionário com o `id` no tenant.
+   */
+  hardDelete(tenantId: string, id: string): Promise<boolean>;
 }

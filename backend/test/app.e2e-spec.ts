@@ -291,6 +291,22 @@ describe('App (e2e, banco stubado)', () => {
     });
   });
 
+  it('GET /employees sem employee:read → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/employees')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
+  it('DELETE /employees/:id/permanent sem employee:purge → 403', async () => {
+    const res = await request(app.getHttpServer())
+      .delete('/employees/7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11/permanent')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
   it('documento inexistente no tenant → 404', async () => {
     const res = await request(app.getHttpServer())
       .get('/documents/qualquer/status')

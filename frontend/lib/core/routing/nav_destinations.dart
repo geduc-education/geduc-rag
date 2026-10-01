@@ -48,6 +48,12 @@ const List<NavDestination> navDestinations = <NavDestination>[
     description: 'Visão geral',
   ),
   NavDestination(
+    label: 'Calendário Acadêmico',
+    icon: Icons.calendar_month_outlined,
+    route: '/home/academic-calendar',
+    description: 'Datas e eventos letivos',
+  ),
+  NavDestination(
     label: 'Usuários',
     icon: Icons.manage_accounts_outlined,
     route: '/home/users',

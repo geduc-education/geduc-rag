@@ -60,6 +60,21 @@ export const ERROR_CODES = {
   /** Redefinir senha de usuário inativo (reative antes). 409. */
   USER_INACTIVE: 'USER_INACTIVE',
 
+  // --- Funcionários -------------------------------------------------------
+  /** Funcionário inexistente, excluído ou de outro tenant. 404. */
+  EMPLOYEE_NOT_FOUND: 'EMPLOYEE_NOT_FOUND',
+  /** E-mail já usado por outro funcionário do tenant (inclusive excluído). 409. */
+  EMPLOYEE_EMAIL_TAKEN: 'EMPLOYEE_EMAIL_TAKEN',
+  /** CPF já usado por outro funcionário do tenant (inclusive excluído). 409. */
+  EMPLOYEE_DOCUMENT_TAKEN: 'EMPLOYEE_DOCUMENT_TAKEN',
+  /**
+   * `userId` inexistente, excluído ou sem vínculo com o tenant — mesma
+   * resposta nos três casos, para não revelar usuário fora do alcance. 400.
+   */
+  EMPLOYEE_USER_NOT_LINKABLE: 'EMPLOYEE_USER_NOT_LINKABLE',
+  /** O usuário já está vinculado a outro funcionário do tenant. 409. */
+  EMPLOYEE_USER_ALREADY_LINKED: 'EMPLOYEE_USER_ALREADY_LINKED',
+
   // --- Documentos ---------------------------------------------------------
   /** Upload acima de `DOCUMENT_MAX_UPLOAD_BYTES` (MulterError LIMIT_FILE_SIZE). 413. */
   ATTACHMENT_TOO_LARGE: 'ATTACHMENT_TOO_LARGE',

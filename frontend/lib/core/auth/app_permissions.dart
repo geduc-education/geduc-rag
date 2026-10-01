@@ -11,6 +11,9 @@ abstract final class AppPermissions {
   static const String tenantRead = 'tenant:read';
   static const String tenantManage = 'tenant:manage';
 
+  static const String employeeRead = 'employee:read';
+  static const String employeeManage = 'employee:manage';
+
   static const String documentRead = 'document:read';
   static const String documentManage = 'document:manage';
   static const String chatQuery = 'chat:query';

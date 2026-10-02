@@ -5,18 +5,20 @@ import '../../../core/theme/app_dimensions.dart';
 import '../../../shared/components/feedback/app_confirm_dialog.dart';
 import '../../../shared/components/feedback/app_state_views.dart';
 import '../../../shared/components/feedback/app_toast.dart';
-import '../../../shared/components/responsive/breakpoints.dart';
-import '../data/models/calendar_event.dart';
-import 'academic_calendar_controller.dart';
-import 'widgets/calendar_event_form_dialog.dart';
+import '../data/academic_calendar_repository.dart';
+import '../data/models/academic_calendar.dart';
+import '../data/models/calendar_day.dart';
+import 'academic_calendars_list_controller.dart';
+import 'calendar_days_controller.dart';
+import 'widgets/calendar_day_form_dialog.dart';
 import 'widgets/calendar_filter_card.dart';
-import 'widgets/calendar_month_grid.dart';
-import 'widgets/calendar_month_records.dart';
-import 'widgets/calendar_panel.dart';
-import 'widgets/calendar_summary_row.dart';
+import 'widgets/calendar_form_dialog.dart';
+import 'widgets/calendar_list.dart';
+import 'widgets/calendar_viewer.dart';
 
-/// Página do Calendário Acadêmico: filtros, resumo do mês por tipo, a grade
-/// mensal e a lista de registros do mês com edição e exclusão.
+/// Página do Calendário Acadêmico: seleção do calendário (filtros e lista),
+/// cadastro/edição/exclusão e o calendário aberto com as visões dia, semana,
+/// mês e ano, o quantitativo por tipo e a edição de cada dia.
 class AcademicCalendarPage extends StatefulWidget {
   const AcademicCalendarPage({super.key});
 
@@ -25,162 +27,107 @@ class AcademicCalendarPage extends StatefulWidget {
 }
 
 class _AcademicCalendarPageState extends State<AcademicCalendarPage> {
-  late final AcademicCalendarController _controller;
+  late final AcademicCalendarsListController _list;
+  late final CalendarDaysController _days;
+  late final IAcademicCalendarRepository _repository;
 
   @override
   void initState() {
     super.initState();
-    _controller = inject<AcademicCalendarController>();
+    _list = inject<AcademicCalendarsListController>();
+    _days = inject<CalendarDaysController>();
+    _repository = inject<IAcademicCalendarRepository>();
     // Pós-frame: notificar durante o build dispararia "setState() during build".
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _controller.ensureLoaded();
+      if (mounted) _list.ensureLoaded();
     });
   }
 
-  Future<void> _openForm([CalendarEvent? event]) async {
-    final saved = await CalendarEventFormDialog.show(
+  Future<void> _openForm([AcademicCalendar? editing]) async {
+    final saved = await CalendarFormDialog.show(
       context,
-      schools: _controller.schools,
-      initial: event,
-      onSubmit: (input) => _controller.save(input, id: event?.id),
+      repository: _repository,
+      schools: _list.schools,
+      yearOptions: _list.yearOptions,
+      defaultYear: _list.year ?? DateTime.now().year,
+      editing: editing,
     );
-    if (!saved || !mounted) return;
+    if (saved == null || !mounted) return;
     showAppToast(
       context,
-      event == null ? 'Registro criado.' : 'Registro atualizado.',
+      editing == null ? 'Calendário criado.' : 'Calendário atualizado.',
       type: AppToastType.success,
     );
+    _list.load();
+    if (editing == null) {
+      _days.open(saved);
+    } else {
+      _days.replaceCalendar(saved);
+    }
   }
 
-  Future<void> _confirmDelete(CalendarEvent event) async {
+  Future<void> _confirmDelete(AcademicCalendar calendar) async {
     final confirmed = await AppConfirmDialog.show(
       context,
-      title: 'Excluir registro',
-      message: 'Excluir "${event.title}"? Esta ação não pode ser desfeita.',
+      title: 'Excluir calendário',
+      message:
+          'Excluir "${calendar.name}" e todos os seus dias? Esta ação não '
+          'pode ser desfeita.',
       confirmLabel: 'Excluir',
       danger: true,
     );
     if (!confirmed || !mounted) return;
-    final error = await _controller.delete(event.id);
+    final error = await _list.remove(calendar);
     if (!mounted) return;
+    if (error == null && _days.calendar?.id == calendar.id) _days.close();
     showAppToast(
       context,
-      error ?? 'Registro excluído.',
+      error ?? 'Calendário excluído.',
       type: error == null ? AppToastType.success : AppToastType.error,
     );
+  }
+
+  Future<void> _editDay(CalendarDay day) async {
+    final saved = await CalendarDayFormDialog.show(
+      context,
+      day: day,
+      onSubmit: (input) => _days.updateDay(day, input),
+    );
+    if (!saved || !mounted) return;
+    showAppToast(context, 'Dia atualizado.', type: AppToastType.success);
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
+      animation: Listenable.merge(<Listenable>[_list, _days]),
       builder: (context, _) => SingleChildScrollView(
         padding: AppDimensions.paddingXl,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             CalendarFilterCard(
-              controller: _controller,
-              onRegister: () => _openForm(),
+              controller: _list,
+              onCreate: _openForm,
+              child: CalendarList(
+                controller: _list,
+                selectedId: _days.calendar?.id,
+                onOpen: _days.open,
+                onEdit: _openForm,
+                onDelete: _confirmDelete,
+              ),
             ),
             AppDimensions.vGapXl,
-            CalendarSummaryRow(countOf: _controller.countOf),
-            AppDimensions.vGapXl,
-            _CalendarBody(
-              controller: _controller,
-              onEdit: _openForm,
-              onDelete: _confirmDelete,
-            ),
+            if (_days.calendar == null)
+              const AppEmptyView(
+                message: 'Selecione um calendário para ver e editar os dias.',
+                icon: Icons.calendar_month_outlined,
+              )
+            else
+              CalendarViewer(controller: _days, onEditDay: _editDay),
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Calendário e registros lado a lado no desktop, empilhados abaixo disso.
-class _CalendarBody extends StatelessWidget {
-  const _CalendarBody({
-    required this.controller,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final AcademicCalendarController controller;
-  final ValueChanged<CalendarEvent> onEdit;
-  final ValueChanged<CalendarEvent> onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    if (controller.state == AcademicCalendarViewState.error) {
-      return AppErrorView(
-        message: controller.error ?? 'Não foi possível carregar o calendário.',
-        onRetry: controller.load,
-      );
-    }
-    final calendar = CalendarPanel(
-      title: 'Calendário escolar',
-      child: _LoadingOverlay(
-        loading: controller.state == AcademicCalendarViewState.loading,
-        child: CalendarMonthGrid(
-          month: controller.month,
-          eventsOn: controller.eventsOn,
-          onPrevious: controller.previousMonth,
-          onNext: controller.nextMonth,
-        ),
-      ),
-    );
-    final records = CalendarPanel(
-      title: 'Registros do mês',
-      child: CalendarMonthRecords(
-        month: controller.month,
-        events: controller.events,
-        onEdit: onEdit,
-        onDelete: onDelete,
-      ),
-    );
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (!AppBreakpoints.fromConstraints(constraints).isDesktop) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[calendar, AppDimensions.vGapXl, records],
-          );
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(flex: 3, child: calendar),
-            AppDimensions.hGapXl,
-            Expanded(flex: 2, child: records),
-          ],
-        );
-      },
-    );
-  }
-}
-
-/// Barra de progresso fina sobre o conteúdo enquanto o mês carrega — a grade
-/// continua visível, sem pulo de layout.
-class _LoadingOverlay extends StatelessWidget {
-  const _LoadingOverlay({required this.loading, required this.child});
-
-  final bool loading;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        child,
-        if (loading)
-          const Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            child: LinearProgressIndicator(minHeight: 2),
-          ),
-      ],
     );
   }
 }

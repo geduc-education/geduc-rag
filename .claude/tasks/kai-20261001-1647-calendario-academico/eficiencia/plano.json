@@ -1,0 +1,256 @@
+{
+  "esquema": 1,
+  "plano": "/home/kaine/source/geduc-rag/.claude/tasks/kai-20261001-1647-calendario-academico",
+  "projeto": "/home/kaine/source/geduc-rag",
+  "repositorios": [],
+  "versao_plugin": "2.5.1?",
+  "gerado_em": "2026-10-01T17:46:16-03:00",
+  "sessoes": [
+    {
+      "id": "6978a721-eb66-4296-a032-a3b7fa1a7227",
+      "encontrada": true,
+      "transcript": "/home/kaine/.claude/projects/-home-kaine-source-geduc-rag/6978a721-eb66-4296-a032-a3b7fa1a7227.jsonl"
+    }
+  ],
+  "planejamento": {
+    "tasks": 7,
+    "ondas": 4,
+    "revisoes_do_plano": 0,
+    "perguntas_planejador": 1,
+    "precisao_arquivos": 100,
+    "tasks_com_fora_do_previsto": 0,
+    "complexidade_x_rodadas": {
+      "alta": 0,
+      "média": 0,
+      "simples": 0
+    }
+  },
+  "execucao": {
+    "tasks_registradas": 5,
+    "tasks_revisadas": 5,
+    "aprovadas_de_primeira": 5,
+    "rodadas_fix_loop": 0,
+    "breakers": 0,
+    "rulings": 1,
+    "perguntas_precisa_contexto": 0,
+    "red": {
+      "ok": 5
+    },
+    "ondas_de_correcao": [],
+    "tasks_de_correcao": 0
+  },
+  "sessao": {
+    "tokens_retidos_por_onda": [
+      12263,
+      12154,
+      12140,
+      6933
+    ],
+    "tokens_retidos_mediana": 12147.0,
+    "contexto_maximo": 102039,
+    "compactacoes": 0,
+    "turnos_validador": {
+      "max": 9,
+      "execucoes": 4,
+      "acima_da_meta": 0,
+      "meta": 30
+    },
+    "retornos": {
+      "total": 38,
+      "acima_do_limite": {
+        "planejador": 2,
+        "fechador": 2
+      }
+    },
+    "retrabalho": {
+      "implementadores": 7,
+      "correcoes": 0,
+      "por_implementador": 0.0,
+      "custo_medio_correcao": null
+    },
+    "adesao_prompt": {
+      "disparos": 7,
+      "canonicos": 7,
+      "longos": 0
+    },
+    "duracao_min": 58.7,
+    "custo_tokens": {
+      "principal": 2960379,
+      "sub_agentes": 15767578
+    },
+    "planejador": {
+      "retornos": 2,
+      "com_perguntas": 1,
+      "mensagens": 0
+    }
+  },
+  "ultima_onda_medida": 4,
+  "ondas_sem_registro": [
+    1
+  ],
+  "causas": [
+    {
+      "id": "T-03",
+      "causa": "makeConnection copiado no spec e regex no lugar de grep literal; sem retrabalho"
+    },
+    {
+      "id": "T-04",
+      "causa": "calendário excluído não expõe dias; update só mexe em vínculos se schoolIds definido"
+    },
+    {
+      "id": "T-06",
+      "causa": "Plano estendido: CalendarDayParamsDto por forbidNonWhitelisted e findById antes de updateDay/listDays para 404 em vez de 500"
+    },
+    {
+      "id": "T-07",
+      "causa": "Ambiente sem títulos no --verbose do jest; títulos comprovados com --json."
+    }
+  ],
+  "tasks": [
+    {
+      "esquema": 1,
+      "id": "T-03",
+      "onda": 2,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Levi",
+      "complexidade": "simples",
+      "status": "[x]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 3,
+      "arquivos_previstos": 4,
+      "arquivos_tocados": 4,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [],
+      "commits": 2,
+      "red": "ok",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 3,
+      "rulings": 0,
+      "breaker": false,
+      "causa": "makeConnection copiado no spec e regex no lugar de grep literal; sem retrabalho"
+    },
+    {
+      "esquema": 1,
+      "id": "T-04",
+      "onda": 2,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Saitama",
+      "complexidade": "alta",
+      "status": "[ ]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 4,
+      "arquivos_previstos": 4,
+      "arquivos_tocados": 4,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [],
+      "commits": 2,
+      "red": "ok",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 2,
+      "rulings": 0,
+      "breaker": false,
+      "causa": "calendário excluído não expõe dias; update só mexe em vínculos se schoolIds definido"
+    },
+    {
+      "esquema": 1,
+      "id": "T-05",
+      "onda": 3,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Platão",
+      "complexidade": "média",
+      "status": "[x]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 0,
+      "arquivos_previstos": 5,
+      "arquivos_tocados": 5,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [],
+      "commits": 2,
+      "red": "ok",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 3,
+      "rulings": 0,
+      "breaker": false,
+      "causa": null
+    },
+    {
+      "esquema": 1,
+      "id": "T-06",
+      "onda": 3,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Jaspion",
+      "complexidade": "alta",
+      "status": "[x]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 4,
+      "arquivos_previstos": 5,
+      "arquivos_tocados": 5,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [],
+      "commits": 2,
+      "red": "ok",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 3,
+      "rulings": 1,
+      "breaker": false,
+      "causa": "Plano estendido: CalendarDayParamsDto por forbidNonWhitelisted e findById antes de updateDay/listDays para 404 em vez de 500"
+    },
+    {
+      "esquema": 1,
+      "id": "T-07",
+      "onda": 4,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Aang",
+      "complexidade": "simples",
+      "status": "[x]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 1,
+      "arquivos_previstos": 2,
+      "arquivos_tocados": 2,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [],
+      "commits": 2,
+      "red": "ok",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 0,
+      "rulings": 0,
+      "breaker": false,
+      "causa": "Ambiente sem títulos no --verbose do jest; títulos comprovados com --json."
+    }
+  ]
+}

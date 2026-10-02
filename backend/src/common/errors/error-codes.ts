@@ -75,6 +75,24 @@ export const ERROR_CODES = {
   /** O usuário já está vinculado a outro funcionário do tenant. 409. */
   EMPLOYEE_USER_ALREADY_LINKED: 'EMPLOYEE_USER_ALREADY_LINKED',
 
+  // --- Escolas ------------------------------------------------------------
+  /** Escola inexistente, excluída ou de outro tenant. 404. */
+  SCHOOL_NOT_FOUND: 'SCHOOL_NOT_FOUND',
+  /** Nome já usado por outra escola do tenant (inclusive excluída). 409. */
+  SCHOOL_NAME_TAKEN: 'SCHOOL_NAME_TAKEN',
+
+  // --- Calendário acadêmico -----------------------------------------------
+  /** Calendário inexistente, excluído ou de outro tenant. 404. */
+  CALENDAR_NOT_FOUND: 'CALENDAR_NOT_FOUND',
+  /** Data fora do intervalo do calendário. 404. */
+  CALENDAR_DAY_NOT_FOUND: 'CALENDAR_DAY_NOT_FOUND',
+  /** Início depois do fim ou alguma data fora do ano letivo informado. 400. */
+  CALENDAR_INVALID_RANGE: 'CALENDAR_INVALID_RANGE',
+  /** Um ou mais `schoolIds` inexistentes, excluídos ou de outro tenant. 400. */
+  CALENDAR_SCHOOLS_INVALID: 'CALENDAR_SCHOOLS_INVALID',
+  /** Tentativa de mudar o tipo de um domingo (sempre dia não letivo). 400. */
+  CALENDAR_SUNDAY_IMMUTABLE: 'CALENDAR_SUNDAY_IMMUTABLE',
+
   // --- Documentos ---------------------------------------------------------
   /** Upload acima de `DOCUMENT_MAX_UPLOAD_BYTES` (MulterError LIMIT_FILE_SIZE). 413. */
   ATTACHMENT_TOO_LARGE: 'ATTACHMENT_TOO_LARGE',

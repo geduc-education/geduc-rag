@@ -307,6 +307,32 @@ describe('App (e2e, banco stubado)', () => {
     expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
   });
 
+  it('GET /schools sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/schools')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
+  it('GET /academic-calendars sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/academic-calendars')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
+  it('PATCH /academic-calendars/:id/days/:date sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .patch(
+        '/academic-calendars/7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11/days/2026-02-01',
+      )
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
   it('documento inexistente no tenant → 404', async () => {
     const res = await request(app.getHttpServer())
       .get('/documents/qualquer/status')

@@ -3,61 +3,59 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/colors_app.dart';
-import '../../data/models/calendar_event.dart';
-import 'calendar_event_type_style.dart';
+import '../../data/models/calendar_day.dart';
+import '../../data/models/calendar_day_type.dart';
+import 'calendar_day_cell.dart';
+import 'calendar_day_type_style.dart';
 
-/// Altura de cada célula de dia da grade.
-const double _kCellHeight = 104;
+/// Busca o dia carregado de uma data; `null` = fora do calendário/período.
+typedef CalendarDayLookup = CalendarDay? Function(DateTime date);
 
-/// Selos exibidos por célula antes do "+N".
-const int _kMaxBadges = 2;
-
-/// Grade mensal (domingo a sábado) com navegação entre meses e os registros
-/// de cada dia como selos coloridos pelo tipo.
+/// Grade mensal (domingo a sábado) com cada dia na cor do seu tipo. Em
+/// [compact] vira o mini-mês da visão ano.
 class CalendarMonthGrid extends StatelessWidget {
   const CalendarMonthGrid({
     super.key,
     required this.month,
-    required this.eventsOn,
-    required this.onPrevious,
-    required this.onNext,
+    required this.dayOn,
+    this.onTapDay,
     this.today,
+    this.compact = false,
   });
 
-  /// Primeiro dia do mês exibido.
+  /// Qualquer dia do mês exibido.
   final DateTime month;
-  final List<CalendarEvent> Function(int day) eventsOn;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
+  final CalendarDayLookup dayOn;
+  final ValueChanged<CalendarDay>? onTapDay;
 
   /// Dia destacado como "hoje"; `null` usa a data do dispositivo.
   final DateTime? today;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final leading = DateTime(month.year, month.month).weekday % 7;
+    final first = DateTime(month.year, month.month);
+    final leading = first.weekday % 7;
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
     final weeks = ((leading + daysInMonth) / 7).ceil();
     final now = today ?? DateTime.now();
-    final todayDay = now.year == month.year && now.month == month.month
-        ? now.day
-        : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _MonthHeader(month: month, onPrevious: onPrevious, onNext: onNext),
-        AppDimensions.vGapLg,
-        const _WeekdayRow(),
-        AppDimensions.vGapSm,
+        CalendarWeekdayRow(compact: compact),
+        AppDimensions.vGapXs,
         for (var week = 0; week < weeks; week++)
           Row(
             children: <Widget>[
               for (var col = 0; col < 7; col++)
                 Expanded(
-                  child: _DayCell(
-                    day: _dayAt(week * 7 + col - leading + 1, daysInMonth),
-                    isToday: week * 7 + col - leading + 1 == todayDay,
-                    eventsOn: eventsOn,
+                  child: _MonthCell(
+                    month: first,
+                    dayOfMonth: week * 7 + col - leading + 1,
+                    dayOn: dayOn,
+                    onTap: onTapDay,
+                    today: now,
+                    compact: compact,
                   ),
                 ),
             ],
@@ -65,57 +63,52 @@ class CalendarMonthGrid extends StatelessWidget {
       ],
     );
   }
-
-  static int? _dayAt(int day, int daysInMonth) =>
-      day >= 1 && day <= daysInMonth ? day : null;
 }
 
-class _MonthHeader extends StatelessWidget {
-  const _MonthHeader({
+/// Célula da grade: preenchimento fora do mês ou o dia com seu tipo.
+class _MonthCell extends StatelessWidget {
+  const _MonthCell({
     required this.month,
-    required this.onPrevious,
-    required this.onNext,
+    required this.dayOfMonth,
+    required this.dayOn,
+    required this.onTap,
+    required this.today,
+    required this.compact,
   });
 
   final DateTime month;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
+  final int dayOfMonth;
+  final CalendarDayLookup dayOn;
+  final ValueChanged<CalendarDay>? onTap;
+  final DateTime today;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final label = '${calendarMonthName(month)} de ${month.year}';
-    return Row(
-      children: <Widget>[
-        IconButton.outlined(
-          tooltip: 'Mês anterior',
-          icon: const Icon(Icons.chevron_left),
-          onPressed: onPrevious,
-        ),
-        Expanded(
-          child: Text(
-            label.toUpperCase(),
-            textAlign: TextAlign.center,
-            style: context.textStyles.textTile.copyWith(
-              color: context.colors.textPrimary,
-            ),
-          ),
-        ),
-        IconButton.outlined(
-          tooltip: 'Próximo mês',
-          icon: const Icon(Icons.chevron_right),
-          onPressed: onNext,
-        ),
-      ],
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    if (dayOfMonth < 1 || dayOfMonth > daysInMonth) {
+      return CalendarDayCell(date: null, day: null, compact: compact);
+    }
+    final date = DateTime(month.year, month.month, dayOfMonth);
+    return CalendarDayCell(
+      date: date,
+      day: dayOn(date),
+      isToday: isSameCalendarDay(date, today),
+      compact: compact,
+      onTap: onTap,
     );
   }
 }
 
-class _WeekdayRow extends StatelessWidget {
-  const _WeekdayRow();
+/// Cabeçalho dos dias da semana (domingo a sábado).
+class CalendarWeekdayRow extends StatelessWidget {
+  const CalendarWeekdayRow({super.key, this.compact = false});
+
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final style = context.textStyles.textSmallBold.copyWith(
+    final style = context.textStyles.textVerySmallBold.copyWith(
       color: context.colors.info500,
     );
     return Row(
@@ -123,120 +116,12 @@ class _WeekdayRow extends StatelessWidget {
         for (final label in calendarWeekdayLabels)
           Expanded(
             child: Text(
-              label.toUpperCase(),
+              compact ? label.substring(0, 1) : label.toUpperCase(),
               textAlign: TextAlign.center,
               style: style,
             ),
           ),
       ],
-    );
-  }
-}
-
-class _DayCell extends StatelessWidget {
-  const _DayCell({
-    required this.day,
-    required this.isToday,
-    required this.eventsOn,
-  });
-
-  /// Dia do mês; `null` = célula de preenchimento fora do mês.
-  final int? day;
-  final bool isToday;
-  final List<CalendarEvent> Function(int day) eventsOn;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final current = day;
-    final events = current == null
-        ? const <CalendarEvent>[]
-        : eventsOn(current);
-    return Container(
-      height: _kCellHeight,
-      padding: AppDimensions.paddingSm,
-      decoration: BoxDecoration(
-        color: current == null ? colors.surfaceMuted : colors.surfaceCard,
-        border: Border.all(color: colors.borderSubtle, width: 0.5),
-      ),
-      child: current == null
-          ? null
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _DayNumber(day: current, isToday: isToday),
-                AppDimensions.vGapXs,
-                for (final event in events.take(_kMaxBadges))
-                  _EventBadge(event: event),
-                if (events.length > _kMaxBadges)
-                  Text(
-                    '+${events.length - _kMaxBadges}',
-                    style: context.textStyles.textSmallBold,
-                  ),
-              ],
-            ),
-    );
-  }
-}
-
-class _DayNumber extends StatelessWidget {
-  const _DayNumber({required this.day, required this.isToday});
-
-  final int day;
-  final bool isToday;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final style = context.textStyles.textSmallBold;
-    if (!isToday) {
-      return Text('$day', style: style.copyWith(color: colors.textPrimary));
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.gapSm,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: colors.primary,
-        borderRadius: AppDimensions.borderRadiusPill,
-      ),
-      child: Text('$day', style: style.copyWith(color: colors.white)),
-    );
-  }
-}
-
-class _EventBadge extends StatelessWidget {
-  const _EventBadge({required this.event});
-
-  final CalendarEvent event;
-
-  @override
-  Widget build(BuildContext context) {
-    final scope = event.isNetworkWide ? calendarNetworkScopeLabel : 'Escola';
-    final label = '$scope • ${event.title}'.toUpperCase();
-    return Tooltip(
-      message: '${event.title} — ${event.type.label} • ${event.scopeName}',
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 2),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimensions.gapXs,
-          vertical: 2,
-        ),
-        decoration: BoxDecoration(
-          color: event.type.accent(context),
-          borderRadius: AppDimensions.borderRadiusSm,
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: context.textStyles.textVerySmallBold.copyWith(
-            color: context.colors.white,
-          ),
-        ),
-      ),
     );
   }
 }

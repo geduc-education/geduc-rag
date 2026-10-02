@@ -51,7 +51,8 @@ const List<NavDestination> navDestinations = <NavDestination>[
     label: 'Calendário Acadêmico',
     icon: Icons.calendar_month_outlined,
     route: '/home/academic-calendar',
-    description: 'Datas e eventos letivos',
+    requiredPermissions: <String>[AppPermissions.employeeManage],
+    description: 'Dias letivos do ano',
   ),
   NavDestination(
     label: 'Usuários',

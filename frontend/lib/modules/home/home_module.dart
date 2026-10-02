@@ -32,9 +32,8 @@ final homeModule = createModule(
       ),
     );
     registerUsersBinds(c);
-        registerAcademicCalendarBinds(c);
+    registerAcademicCalendarBinds(c);
     registerEmployeesBinds(c);
-
     registerRagAssistantBinds(c);
     registerChangelogBinds(c);
     c.route(
@@ -44,8 +43,8 @@ final homeModule = createModule(
       children: (r) {
         r.route('/dashboard', child: (_, _) => const DashboardPage());
         registerUsersRoutes(r);
-                registerAcademicCalendarRoutes(r);
-            registerEmployeesBinds(c);
+        registerAcademicCalendarRoutes(r);
+        registerEmployeesRoutes(r);
         registerRagAssistantRoutes(r);
         registerChangelogRoutes(r);
       },

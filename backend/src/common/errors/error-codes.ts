@@ -81,6 +81,18 @@ export const ERROR_CODES = {
   /** Nome já usado por outra escola do tenant (inclusive excluída). 409. */
   SCHOOL_NAME_TAKEN: 'SCHOOL_NAME_TAKEN',
 
+  // --- Horários de aula da escola -----------------------------------------
+  /** Horário de aula inexistente, excluído ou de outra escola/tenant. 404. */
+  LESSON_SLOT_NOT_FOUND: 'LESSON_SLOT_NOT_FOUND',
+  /** Fim do horário igual ou anterior ao início. 400. */
+  LESSON_SLOT_INVALID_RANGE: 'LESSON_SLOT_INVALID_RANGE',
+  /** Horário que cruza outro horário (não excluído) da mesma escola. 409. */
+  LESSON_SLOT_OVERLAP: 'LESSON_SLOT_OVERLAP',
+  /** Nome já usado por outro horário (não excluído) da mesma escola. 409. */
+  LESSON_SLOT_NAME_TAKEN: 'LESSON_SLOT_NAME_TAKEN',
+  /** Excluir horário usado por aula de horário semanal não excluído. 409. */
+  LESSON_SLOT_IN_USE: 'LESSON_SLOT_IN_USE',
+
   // --- Calendário acadêmico -----------------------------------------------
   /** Calendário inexistente, excluído ou de outro tenant. 404. */
   CALENDAR_NOT_FOUND: 'CALENDAR_NOT_FOUND',
@@ -92,6 +104,53 @@ export const ERROR_CODES = {
   CALENDAR_SCHOOLS_INVALID: 'CALENDAR_SCHOOLS_INVALID',
   /** Tentativa de mudar o tipo de um domingo (sempre dia não letivo). 400. */
   CALENDAR_SUNDAY_IMMUTABLE: 'CALENDAR_SUNDAY_IMMUTABLE',
+
+  // --- Disciplinas --------------------------------------------------------
+  /** Disciplina inexistente, excluída ou de outro tenant. 404. */
+  SUBJECT_NOT_FOUND: 'SUBJECT_NOT_FOUND',
+  /** Nome já usado por outra disciplina do tenant (inclusive excluída). 409. */
+  SUBJECT_NAME_TAKEN: 'SUBJECT_NAME_TAKEN',
+
+  // --- Turmas -------------------------------------------------------------
+  /** Turma inexistente, excluída ou de outro tenant. 404. */
+  SCHOOL_CLASS_NOT_FOUND: 'SCHOOL_CLASS_NOT_FOUND',
+  /** Nome já usado por outra turma da mesma escola e ano letivo. 409. */
+  SCHOOL_CLASS_NAME_TAKEN: 'SCHOOL_CLASS_NAME_TAKEN',
+  /** `schoolId` inexistente, excluído ou de outro tenant. 400. */
+  SCHOOL_CLASS_SCHOOL_INVALID: 'SCHOOL_CLASS_SCHOOL_INVALID',
+
+  // --- Horário semanal ----------------------------------------------------
+  /** Horário semanal inexistente, excluído ou de outro tenant. 404. */
+  SCHEDULE_NOT_FOUND: 'SCHEDULE_NOT_FOUND',
+  /** Aula inexistente no horário informado. 404. */
+  SCHEDULE_LESSON_NOT_FOUND: 'SCHEDULE_LESSON_NOT_FOUND',
+  /**
+   * Semana que não começa na segunda, não tem 7 dias, não toca o ano letivo
+   * da turma ou dia informado fora da semana/repetido. 400.
+   */
+  SCHEDULE_INVALID_PERIOD: 'SCHEDULE_INVALID_PERIOD',
+  /** A turma já tem horário para essa semana. 409. */
+  SCHEDULE_WEEK_TAKEN: 'SCHEDULE_WEEK_TAKEN',
+  /** Nenhuma data da semana coberta por calendário aplicável à turma. 400. */
+  SCHEDULE_CALENDAR_NOT_FOUND: 'SCHEDULE_CALENDAR_NOT_FOUND',
+  /**
+   * Aula com início igual ou posterior ao fim. 400. Não é mais emitido desde
+   * que as horas vêm do horário da escola (`LESSON_SLOT_INVALID_RANGE`);
+   * mantido no catálogo por compatibilidade com clientes.
+   */
+  SCHEDULE_LESSON_INVALID_TIME: 'SCHEDULE_LESSON_INVALID_TIME',
+  /** O mesmo horário de aula repetido no mesmo dia. 400. */
+  SCHEDULE_LESSON_OVERLAP: 'SCHEDULE_LESSON_OVERLAP',
+  /** `lessonSlotId` inexistente, excluído ou de outra escola que não a da turma. 400. */
+  SCHEDULE_LESSON_SLOT_INVALID: 'SCHEDULE_LESSON_SLOT_INVALID',
+  /** Aula em dia que não é letivo (ou sem calendário). 400. */
+  SCHEDULE_LESSON_ON_NON_SCHOOL_DAY: 'SCHEDULE_LESSON_ON_NON_SCHOOL_DAY',
+  /** Sábado letivo sem nenhuma aula. 400. */
+  SCHEDULE_SATURDAY_WITHOUT_LESSONS: 'SCHEDULE_SATURDAY_WITHOUT_LESSONS',
+  /** Uma ou mais `subjectId` inexistentes, excluídas ou de outro tenant. 400. */
+  SCHEDULE_SUBJECTS_INVALID: 'SCHEDULE_SUBJECTS_INVALID',
+  /** Alterar/remover aula com conteúdo ou frequência registrados. 409. */
+  SCHEDULE_HAS_RECORDS: 'SCHEDULE_HAS_RECORDS',
 
   // --- Documentos ---------------------------------------------------------
   /** Upload acima de `DOCUMENT_MAX_UPLOAD_BYTES` (MulterError LIMIT_FILE_SIZE). 413. */

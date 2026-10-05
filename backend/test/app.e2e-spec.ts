@@ -315,6 +315,14 @@ describe('App (e2e, banco stubado)', () => {
     expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
   });
 
+  it('GET /schools/:schoolId/lesson-slots sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/schools/7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11/lesson-slots')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
   it('GET /academic-calendars sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
     const res = await request(app.getHttpServer())
       .get('/academic-calendars')
@@ -327,6 +335,48 @@ describe('App (e2e, banco stubado)', () => {
     const res = await request(app.getHttpServer())
       .patch(
         '/academic-calendars/7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11/days/2026-02-01',
+      )
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
+  it('GET /subjects sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/subjects')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
+  it('GET /school-classes sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/school-classes')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
+  it('GET /weekly-schedules sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/weekly-schedules')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
+  it('POST /weekly-schedules/:id/replicate sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/weekly-schedules/7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11/replicate')
+      .set({ ...auth(), 'tenant-id': TENANT });
+    expect(res.status).toBe(403);
+    expect(res.body).toMatchObject({ code: 'FORBIDDEN_PERMISSION' });
+  });
+
+  it('PATCH /weekly-schedules/:id/lessons/:lessonId/record sem employee:manage → 403 FORBIDDEN_PERMISSION', async () => {
+    const res = await request(app.getHttpServer())
+      .patch(
+        '/weekly-schedules/7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e11/lessons/7f0b0a52-2d0a-4a6b-9a5e-2b1d9a1c3e12/record',
       )
       .set({ ...auth(), 'tenant-id': TENANT });
     expect(res.status).toBe(403);

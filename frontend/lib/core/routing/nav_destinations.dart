@@ -5,6 +5,9 @@ import '../auth/app_permissions.dart';
 /// Seção de agrupamento do menu lateral. Puramente de apresentação — a
 /// visibilidade de cada item é decidida pelas permissões.
 enum NavGroup {
+  /// Cadastro escolar (Escolas, Disciplinas, Turmas e Horário Semanal).
+  academico,
+
   /// Gestão da plataforma (Usuários, Funcionários e, em seguida, Tenants).
   administracao,
 
@@ -55,6 +58,38 @@ const List<NavDestination> navDestinations = <NavDestination>[
     description: 'Dias letivos do ano',
   ),
   NavDestination(
+    label: 'Escolas',
+    icon: Icons.school_outlined,
+    route: '/home/schools',
+    requiredPermissions: <String>[AppPermissions.employeeManage],
+    description: 'Unidades do tenant',
+    group: NavGroup.academico,
+  ),
+  NavDestination(
+    label: 'Disciplinas',
+    icon: Icons.menu_book_outlined,
+    route: '/home/subjects',
+    requiredPermissions: <String>[AppPermissions.employeeManage],
+    description: 'Componentes curriculares',
+    group: NavGroup.academico,
+  ),
+  NavDestination(
+    label: 'Turmas',
+    icon: Icons.groups_outlined,
+    route: '/home/school-classes',
+    requiredPermissions: <String>[AppPermissions.employeeManage],
+    description: 'Turmas por escola e ano',
+    group: NavGroup.academico,
+  ),
+  NavDestination(
+    label: 'Horário Semanal',
+    icon: Icons.schedule_outlined,
+    route: '/home/weekly-schedules',
+    requiredPermissions: <String>[AppPermissions.employeeManage],
+    description: 'Aulas da semana por turma',
+    group: NavGroup.academico,
+  ),
+  NavDestination(
     label: 'Usuários',
     icon: Icons.manage_accounts_outlined,
     route: '/home/users',
@@ -96,24 +131,28 @@ const List<NavDestination> navDestinations = <NavDestination>[
 
 /// Rótulo de exibição da seção [group] na sidebar.
 String navGroupLabel(NavGroup group) => switch (group) {
+  NavGroup.academico => 'Acadêmico',
   NavGroup.administracao => 'Administração',
   NavGroup.assistente => 'Assistente',
 };
 
 /// Ícone do header do grupo [group] na sidebar.
 IconData navGroupIcon(NavGroup group) => switch (group) {
+  NavGroup.academico => Icons.account_balance_outlined,
   NavGroup.administracao => Icons.admin_panel_settings_outlined,
   NavGroup.assistente => Icons.auto_awesome_outlined,
 };
 
 /// Descrição curta do grupo — tooltip do header na sidebar.
 String navGroupDescription(NavGroup group) => switch (group) {
+  NavGroup.academico => 'Escolas, turmas e horários',
   NavGroup.administracao => 'Gestão da plataforma',
   NavGroup.assistente => 'Documentos e chat do RAG',
 };
 
 /// Ordem fixa das seções na sidebar.
 const List<NavGroup> navGroupOrder = <NavGroup>[
+  NavGroup.academico,
   NavGroup.administracao,
   NavGroup.assistente,
 ];

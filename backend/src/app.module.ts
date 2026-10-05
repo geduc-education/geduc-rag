@@ -25,6 +25,9 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { SchoolsModule } from './modules/schools/schools.module';
 import { AcademicCalendarModule } from './modules/academic-calendar/academic-calendar.module';
+import { SubjectsModule } from './modules/subjects/subjects.module';
+import { SchoolClassesModule } from './modules/school-classes/school-classes.module';
+import { WeeklySchedulesModule } from './modules/weekly-schedules/weekly-schedules.module';
 import { ChangelogModule } from './modules/changelog/changelog.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { IngestionModule } from './modules/ingestion/ingestion.module';
@@ -82,6 +85,9 @@ import { ChatModule } from './modules/chat/chat.module';
     EmployeesModule,
     SchoolsModule,
     AcademicCalendarModule,
+    SubjectsModule,
+    SchoolClassesModule,
+    WeeklySchedulesModule,
     ChangelogModule,
     // RAG — write path (assíncrono) e read path
     DocumentsModule,

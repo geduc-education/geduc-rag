@@ -1,0 +1,324 @@
+{
+  "esquema": 1,
+  "plano": "/home/kaine/source/geduc-rag/.claude/tasks/kai-20261002-1116-horario-academico",
+  "projeto": "/home/kaine/source/geduc-rag",
+  "repositorios": [],
+  "versao_plugin": "2.5.1?",
+  "gerado_em": "2026-10-02T14:31:02-03:00",
+  "sessoes": [
+    {
+      "id": "6978a721-eb66-4296-a032-a3b7fa1a7227",
+      "encontrada": true,
+      "transcript": "/home/kaine/.claude/projects/-home-kaine-source-geduc-rag/6978a721-eb66-4296-a032-a3b7fa1a7227.jsonl"
+    }
+  ],
+  "planejamento": {
+    "tasks": 7,
+    "ondas": 4,
+    "revisoes_do_plano": 1,
+    "perguntas_planejador": 2,
+    "precisao_arquivos": null,
+    "tasks_com_fora_do_previsto": 0,
+    "complexidade_x_rodadas": {
+      "alta": 0.33,
+      "média": 0
+    }
+  },
+  "execucao": {
+    "tasks_registradas": 6,
+    "tasks_revisadas": 6,
+    "aprovadas_de_primeira": 5,
+    "rodadas_fix_loop": 1,
+    "breakers": 0,
+    "rulings": 4,
+    "perguntas_precisa_contexto": 0,
+    "red": {
+      "sem teste": 1,
+      "ausente": 5
+    },
+    "ondas_de_correcao": [],
+    "tasks_de_correcao": 0
+  },
+  "sessao": {
+    "tokens_retidos_por_onda": [
+      12263,
+      12154,
+      12140,
+      6933,
+      12588,
+      100078,
+      13906,
+      6286
+    ],
+    "tokens_retidos_mediana": 12208.5,
+    "contexto_maximo": 308884,
+    "compactacoes": 0,
+    "turnos_validador": {
+      "max": 9,
+      "execucoes": 10,
+      "acima_da_meta": 0,
+      "meta": 30
+    },
+    "retornos": {
+      "total": 79,
+      "acima_do_limite": {
+        "planejador": 4,
+        "fechador": 5
+      }
+    },
+    "retrabalho": {
+      "implementadores": 14,
+      "correcoes": 1,
+      "por_implementador": 0.07,
+      "custo_medio_correcao": null
+    },
+    "adesao_prompt": {
+      "disparos": 14,
+      "canonicos": 14,
+      "longos": 0
+    },
+    "duracao_min": 214.1,
+    "custo_tokens": {
+      "principal": 18959242,
+      "sub_agentes": 42686224
+    },
+    "planejador": {
+      "retornos": 5,
+      "com_perguntas": 2,
+      "mensagens": 1
+    }
+  },
+  "ultima_onda_medida": 3,
+  "ondas_sem_registro": [],
+  "causas": [
+    {
+      "id": "T-01",
+      "causa": "Interface sem ON UPDATE nas FKs; seguiu a convenção da 0004 (ON UPDATE CASCADE e FK de tenant_id nas filhas)."
+    },
+    {
+      "id": "T-02",
+      "causa": "addDays reimplementado (o do calendário é privado); mergeWithRecorded descarta data fora de replicated."
+    },
+    {
+      "id": "T-05",
+      "causa": "TOUCH_SCHEDULES_SQL ganhou deleted_at IS NULL e saveWeeks relê os horários na transação para devolver created/replaced; contrato literal não cobria"
+    },
+    {
+      "id": "T-06",
+      "causa": "Revisão reprovou: spec sem prova de remoção das aulas antigas na replicação e sem discriminar precedência do calendário da escola; corrigido só no spec"
+    }
+  ],
+  "tasks": [
+    {
+      "esquema": 1,
+      "id": "T-01",
+      "onda": 1,
+      "origem": "plano",
+      "camada": "database",
+      "persona": "Athena",
+      "complexidade": "média",
+      "status": "[x]",
+      "produz": true,
+      "consome": false,
+      "red_previsto": "sem teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 0,
+      "arquivos_previstos": 1,
+      "arquivos_tocados": 0,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [
+        "backend/database/migrations/0005_weekly_schedule.sql"
+      ],
+      "commits": 0,
+      "red": "sem teste",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 0,
+      "rulings": 1,
+      "breaker": false,
+      "causa": "Interface sem ON UPDATE nas FKs; seguiu a convenção da 0004 (ON UPDATE CASCADE e FK de tenant_id nas filhas)."
+    },
+    {
+      "esquema": 1,
+      "id": "T-02",
+      "onda": 1,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Arquimedes",
+      "complexidade": "alta",
+      "status": "[x]",
+      "produz": true,
+      "consome": false,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 3,
+      "arquivos_previstos": 3,
+      "arquivos_tocados": 0,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [
+        "backend/src/common/errors/error-codes.ts",
+        "backend/src/modules/weekly-schedules/weekly-schedule.rules.ts",
+        "backend/src/modules/weekly-schedules/__tests__/weekly-schedule.rules.spec.ts"
+      ],
+      "commits": 0,
+      "red": "ausente",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 3,
+      "rulings": 1,
+      "breaker": false,
+      "causa": "addDays reimplementado (o do calendário é privado); mergeWithRecorded descarta data fora de replicated."
+    },
+    {
+      "esquema": 1,
+      "id": "T-03",
+      "onda": 2,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Levi",
+      "complexidade": "média",
+      "status": "[x]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 0,
+      "arquivos_previstos": 9,
+      "arquivos_tocados": 0,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [
+        "backend/src/modules/subjects/application/interface/repository/subject.repository.interface.ts",
+        "backend/src/modules/subjects/infra/database/repositories/subject.repository.ts",
+        "backend/src/modules/subjects/infra/database/queries/subject-list.query.ts",
+        "backend/src/modules/subjects/dto/subject.dto.ts",
+        "backend/src/modules/subjects/subjects.service.ts",
+        "backend/src/modules/subjects/subjects.controller.ts",
+        "backend/src/modules/subjects/subjects.module.ts",
+        "backend/src/modules/subjects/__tests__/subject.repository.spec.ts",
+        "backend/src/modules/subjects/__tests__/subjects.service.spec.ts"
+      ],
+      "commits": 0,
+      "red": "ausente",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 2,
+      "rulings": 0,
+      "breaker": false,
+      "causa": null
+    },
+    {
+      "esquema": 1,
+      "id": "T-04",
+      "onda": 2,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Platão",
+      "complexidade": "média",
+      "status": "[x]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 0,
+      "arquivos_previstos": 9,
+      "arquivos_tocados": 0,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [
+        "backend/src/modules/school-classes/application/interface/repository/school-class.repository.interface.ts",
+        "backend/src/modules/school-classes/infra/database/repositories/school-class.repository.ts",
+        "backend/src/modules/school-classes/infra/database/queries/school-class-list.query.ts",
+        "backend/src/modules/school-classes/dto/school-class.dto.ts",
+        "backend/src/modules/school-classes/school-classes.service.ts",
+        "backend/src/modules/school-classes/school-classes.controller.ts",
+        "backend/src/modules/school-classes/school-classes.module.ts",
+        "backend/src/modules/school-classes/__tests__/school-class.repository.spec.ts",
+        "backend/src/modules/school-classes/__tests__/school-classes.service.spec.ts"
+      ],
+      "commits": 0,
+      "red": "ausente",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 2,
+      "rulings": 1,
+      "breaker": false,
+      "causa": null
+    },
+    {
+      "esquema": 1,
+      "id": "T-05",
+      "onda": 2,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Saitama",
+      "complexidade": "alta",
+      "status": "[x]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 0,
+      "perguntas": 0,
+      "desvios": 5,
+      "arquivos_previstos": 4,
+      "arquivos_tocados": 0,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [
+        "backend/src/modules/weekly-schedules/application/interface/repository/weekly-schedule.repository.interface.ts",
+        "backend/src/modules/weekly-schedules/infra/database/repositories/weekly-schedule.repository.ts",
+        "backend/src/modules/weekly-schedules/infra/database/queries/weekly-schedule-list.query.ts",
+        "backend/src/modules/weekly-schedules/__tests__/weekly-schedule.repository.spec.ts"
+      ],
+      "commits": 0,
+      "red": "ausente",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 0,
+      "sugestoes_revisor": 3,
+      "rulings": 1,
+      "breaker": false,
+      "causa": "TOUCH_SCHEDULES_SQL ganhou deleted_at IS NULL e saveWeeks relê os horários na transação para devolver created/replaced; contrato literal não cobria"
+    },
+    {
+      "esquema": 1,
+      "id": "T-06",
+      "onda": 3,
+      "origem": "plano",
+      "camada": "backend",
+      "persona": "Jaspion",
+      "complexidade": "alta",
+      "status": "[x]",
+      "produz": true,
+      "consome": true,
+      "red_previsto": "teste",
+      "modelo": "inherit",
+      "rodadas_fix_loop": 1,
+      "perguntas": 0,
+      "desvios": 3,
+      "arquivos_previstos": 5,
+      "arquivos_tocados": 0,
+      "fora_do_previsto": [],
+      "previstos_nao_tocados": [
+        "backend/src/modules/weekly-schedules/dto/weekly-schedule.dto.ts",
+        "backend/src/modules/weekly-schedules/weekly-schedules.service.ts",
+        "backend/src/modules/weekly-schedules/weekly-schedules.controller.ts",
+        "backend/src/modules/weekly-schedules/weekly-schedules.module.ts",
+        "backend/src/modules/weekly-schedules/__tests__/weekly-schedules.service.spec.ts"
+      ],
+      "commits": 0,
+      "red": "ausente",
+      "reprovacoes_gate": 0,
+      "bloqueantes_revisor": 2,
+      "sugestoes_revisor": 4,
+      "rulings": 0,
+      "breaker": false,
+      "causa": "Revisão reprovou: spec sem prova de remoção das aulas antigas na replicação e sem discriminar precedência do calendário da escola; corrigido só no spec"
+    }
+  ]
+}
